@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <style>
@@ -751,7 +752,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 <div class="toast" id="toast"></div>
 <script>const fbConfig={apiKey:"AIzaSyCxNdOs69QAD-1FTIDVyf0N0N2YGqWNgOo",authDomain:"nexcart-db-7a02f.firebaseapp.com",projectId:"nexcart-db-7a02f",storageBucket:"nexcart-db-7a02f.firebasestorage.app",messagingSenderId:"868851396316",appId:"1:868851396316:web:951e1988f3f2e4b065ce19",measurementId:"G-NPMLZ054G8"};
 firebase.initializeApp(fbConfig);
-const db=firebase.firestore(),storage=firebase.storage();
+const db=firebase.firestore(),storage=firebase.storage(),auth=firebase.auth();
 const shopsCol=()=>db.collection('shops'),productsCol=()=>db.collection('products');
 const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)),del:k=>localStorage.removeItem(k)};
 const getVendors=()=>LS.get('lsv_vendors')||{};
@@ -851,23 +852,26 @@ window.switchAuth=m=>{
  document.getElementById('a-btn').textContent=m==='login'?'Login':'Create Account';
  ['a-err','a-ok'].forEach(id=>{const e=document.getElementById(id);e.className='amsg';});
 };
-window.handleAuth=()=>{
+window.handleAuth=async()=>{
  const email=document.getElementById('a-email').value.trim().toLowerCase();
  const pass=document.getElementById('a-pass').value,name=document.getElementById('a-name').value.trim();
  const err=document.getElementById('a-err');
  if(!email||!pass){err.textContent='Please fill in all fields.';err.className='amsg err show';return;}
- const vendors=getVendors();
- if(authMode==='register'){
- if(!name){err.textContent='Please enter your name.';err.className='amsg err show';return;}
- if(pass.length<6){err.textContent='Password must be at least 6 characters.';err.className='amsg err show';return;}
- if(vendors[email]){err.textContent='Email already registered.';err.className='amsg err show';return;}
- const id=uid();vendors[email]={id,name,email,pass,createdAt:now()};LS.set('lsv_vendors',vendors);loginUser({id,name,email});
- }else{
- const v=vendors[email];
- if(!v){err.textContent='No account found.';err.className='amsg err show';return;}
- if(v.pass!==pass){err.textContent='Incorrect password.';err.className='amsg err show';return;}
- loginUser({id:v.id,name:v.name,email:v.email});
- }
+ try{
+  if(authMode==='register'){
+   if(!name){throw new Error('Please enter your name.');}
+   if(pass.length<6){throw new Error('Password must be at least 6 characters.');}
+   const cred=await auth.createUserWithEmailAndPassword(email,pass);
+   await cred.user.updateProfile({displayName:name});
+   await db.collection('vendor_profiles').doc(cred.user.uid).set({uid:cred.user.uid,name,email,role:'vendor',active:true,createdAt:now()});
+   loginUser({id:cred.user.uid,name,email});
+  }else{
+   const cred=await auth.signInWithEmailAndPassword(email,pass);
+   const profile=await db.collection('vendor_profiles').doc(cred.user.uid).get();
+   if(!profile.exists||profile.data().active===false){await auth.signOut();throw new Error('This account is not registered as an active vendor.');}
+   loginUser({id:cred.user.uid,name:profile.data().name||cred.user.displayName||email.split('@')[0],email});
+  }
+ }catch(e){err.textContent=(e.message||'Authentication failed').replace('Firebase: ','');err.className='amsg err show';}
 };
 function loginUser(user){
  cu=user;LS.set('lsv_session',user);
@@ -880,11 +884,12 @@ function loginUser(user){
 }
 window.doLogout=()=>{
  LS.del('lsv_session');if(prodUnsub)prodUnsub();if(partnerUnsub)partnerUnsub();
+ auth.signOut().catch(()=>{});
  cu=null;vs=null;map=null;mkr=null;slat=null;slng=null;_orders=[];_products=[];_partners=[];_uploadedDocs={};_imgUrl='';
  document.getElementById('a-email').value='';document.getElementById('a-pass').value='';
  showScreen('auth');toast('Signed out','info');
 };
-window.addEventListener('load',()=>{const s=LS.get('lsv_session');if(s&&s.id)loginUser(s);else showScreen('auth');});
+window.addEventListener('load',()=>{auth.onAuthStateChanged(async user=>{if(!user){LS.del('lsv_session');showScreen('auth');return;}const profile=await db.collection('vendor_profiles').doc(user.uid).get().catch(()=>null);if(profile&&profile.exists){loginUser({id:user.uid,name:profile.data().name||user.displayName||'Vendor',email:user.email||''});}else showScreen('auth');});});
 
 // Map 
 function mkIcon(){return L.divIcon({className:'',html:'<div style="width:18px;height:18px;background:var(--orange);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 12px rgba(214,168,58,.72)"></div>',iconSize:[18,18],iconAnchor:[9,9]});}
@@ -905,7 +910,7 @@ function updateSummary(d){if(!d||!d.name)return;document.getElementById('st-st')
 window.saveShop=()=>{
  const name=document.getElementById('s-name').value.trim(),cat=document.getElementById('s-cat').value,addr=document.getElementById('s-addr').value.trim();
  if(!name||!cat||!addr){smsg('shop-err','Name, category and address required.','err');return;}
- const data={name,category:cat,address:addr,phone:document.getElementById('s-phone').value.trim(),hours:document.getElementById('s-hours').value.trim(),desc:document.getElementById('s-desc').value.trim(),lat:slat||0,lng:slng||0,vendorId:cu.id,vendorName:cu.name,vendorEmail:cu.email,rating:4.5,sellerVerified:getDocCompleteness()==='verified',updatedAt:now(),createdAt:(vs&&vs.createdAt)||now(),docs:vs?.docs||{}};
+ const data={name,category:cat,address:addr,phone:document.getElementById('s-phone').value.trim(),hours:document.getElementById('s-hours').value.trim(),desc:document.getElementById('s-desc').value.trim(),lat:slat||0,lng:slng||0,ownerUid:auth.currentUser.uid,vendorId:cu.id,vendorName:cu.name,vendorEmail:cu.email,rating:4.5,sellerVerified:getDocCompleteness()==='verified',updatedAt:now(),createdAt:(vs&&vs.createdAt)||now(),docs:vs?.docs||{}};
  smsg('shop-ok','Saving');
  shopsCol().doc(cu.id).set(data).then(()=>{vs={id:cu.id,...data};updateSummary(vs);refreshSetupGate();smsg('shop-ok','Shop saved. You can start selling now; documents are optional.');toast('Shop saved');}).catch(e=>smsg('shop-err',' '+e.message,'err'));
 };
@@ -964,7 +969,7 @@ window.addProduct=()=>{
  if(isKids){sizes=[..._kidsSizes];ageGroups=[..._kidsAges];}
  const qty=parseInt(stock);
  smsg('prod-ok','Adding product');
- const data={name,price,category:cat,subcategory,stock:qty,maxStock:Math.max(qty,100),image:_imgUrl,desc,shopName:vs.name,shopId:cu.id,shopLat:vs.lat,shopLng:vs.lng,vendorId:cu.id,vendorName:cu.name,vendorEmail:cu.email,sellerVerified:true,rating:4.5,createdAt:now()};
+ const data={name,price,category:cat,subcategory,stock:qty,maxStock:Math.max(qty,100),image:_imgUrl,desc,shopName:vs.name,shopId:cu.id,shopLat:vs.lat,shopLng:vs.lng,ownerUid:auth.currentUser.uid,vendorId:cu.id,vendorName:cu.name,vendorEmail:cu.email,sellerVerified:vs.sellerVerified===true,rating:4.5,createdAt:now()};
  if(isMeat)data.pricePerKg=pricePerKg;
  if(sizes.length)data.sizes=sizes;
  if(ageGroups.length)data.ageGroups=ageGroups;
