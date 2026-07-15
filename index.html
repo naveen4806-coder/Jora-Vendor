@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Nexcart Vendor Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Manrope:wght@500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --blue:#EF172F;--blue-d:#B9091D;--blue-l:#FF344A;--blue-p:#FFF0F2;--blue-pm:#FFC7CE;
+ --orange:#F4C430;--orange-d:#9A6B00;--orange-p:#FFF9DE;
+ --white:#FFFFFF;--off:#F7F7F8;--black:#090A0C;--text:#17171A;
+ --mid:#6B6B73;--border:#E7E7EA;--border-d:#CACAD0;
+ --success:#059669;--success-p:#ECFDF5;--success-b:#A7F3D0;
+ --error:#DC2626;--error-p:#FEF2F2;--error-b:#FECACA;
+ --warn:#D97706;--warn-p:#FFFBEB;--warn-b:#FDE68A;
+ --purple:#EF172F;--teal:#0891B2;
+ --disp:'Manrope',system-ui,sans-serif;--logo:'Manrope',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif;
+ --radius:14px;--radius-sm:10px;--radius-lg:20px;
+ --shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.06);
+ --shadow-md:0 10px 30px rgba(0,0,0,.12);--shadow-lg:0 18px 50px rgba(0,0,0,.16);
+}
+body{font-family:var(--body);background:var(--off);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--off)}
+::-webkit-scrollbar-thumb{background:var(--border-d);border-radius:99px}
+#screen-auth,#screen-dash{display:none}
+#screen-auth.active{display:flex;align-items:stretch;min-height:100vh}
+#screen-dash.active{display:block}
+
+.auth-left{flex:1;position:relative;overflow:hidden;background:linear-gradient(135deg,#06070A 0%,#111216 58%,#270408 100%);padding:56px 60px;display:flex;flex-direction:column;justify-content:center;}
+.auth-noise{position:absolute;inset:0;opacity:.035;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px}
+.auth-grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:56px 56px}
+.auth-glow{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(214,168,58,.24) 0%,transparent 65%);bottom:-120px;right:-80px;pointer-events:none}
+.auth-glow2{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.28) 0%,transparent 65%);top:-60px;left:-60px;pointer-events:none}
+.al-brand{position:relative;z-index:1;margin-bottom:56px;display:flex;align-items:center;gap:10px}
+.al-logo-mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--orange),#F5D06F);border:1px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(214,168,58,.42);flex-shrink:0}
+.al-logo-mark svg{width:20px;height:20px}
+.al-wordmark{font-family:var(--logo);font-size:1.12rem;font-weight:800;letter-spacing:.04em;color:#fff;text-transform:uppercase}
+.al-wordmark .shore{color:#fff}.al-wordmark .nex{color:var(--blue)}
+.al-tag{font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:rgba(214,168,58,.18);border:1px solid rgba(214,168,58,.34);color:#F5D06F;padding:3px 9px;border-radius:30px}
+.auth-hero{position:relative;z-index:1}
+.auth-hero h2{font-family:var(--disp);font-size:2.6rem;font-weight:800;color:#fff;line-height:1.1;letter-spacing:0;margin-bottom:18px}
+.auth-hero h2 .outline{color:transparent;-webkit-text-stroke:1.5px var(--orange)}
+.auth-hero p{font-size:.95rem;color:rgba(255,255,255,.5);line-height:1.8;max-width:360px}
+.auth-perks{margin-top:36px;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
+.aperk{display:flex;align-items:center;gap:13px}
+.ap-ic{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0}
+.aperk span{font-size:.86rem;color:rgba(255,255,255,.6);font-weight:500}
+.auth-stats{display:flex;gap:0;margin-top:52px;padding-top:28px;border-top:1px solid rgba(255,255,255,.1);position:relative;z-index:1}
+.ast{flex:1;padding-right:24px}
+.ast+.ast{border-left:1px solid rgba(255,255,255,.1);padding-left:24px}
+.ast-v{font-family:var(--disp);font-size:1.7rem;font-weight:800;color:#fff;letter-spacing:0}
+.ast-v span{color:var(--orange)}
+.ast-l{font-size:.7rem;color:rgba(255,255,255,.35);margin-top:2px;letter-spacing:.02em;font-weight:500}
+.auth-right{width:480px;background:var(--white);display:flex;align-items:center;justify-content:center;padding:52px 56px;position:relative}
+.auth-form{width:100%}
+.auth-ttl{font-family:var(--disp);font-size:1.8rem;font-weight:800;letter-spacing:0;margin-bottom:4px}
+.auth-sub{font-size:.86rem;color:var(--mid);margin-bottom:32px;line-height:1.6}
+.atabs{display:flex;background:var(--off);border-radius:12px;padding:4px;gap:4px;margin-bottom:26px}
+.atab{flex:1;padding:10px;text-align:center;border:none;background:none;font-family:var(--body);font-size:.85rem;font-weight:600;color:var(--mid);border-radius:9px;cursor:pointer;transition:all .22s}
+.atab.active{background:var(--white);color:var(--text);box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fl{font-size:.72rem;font-weight:700;color:var(--mid);letter-spacing:.05em;text-transform:uppercase}
+.fi{padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--body);font-size:.88rem;color:var(--text);background:var(--white);outline:none;transition:border-color .18s,box-shadow .18s,background .18s;width:100%}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(109,40,217,.14);background:#FCFAFF}
+.fi::placeholder{color:#BCC1CE}
+.btn-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--blue-l),var(--blue-d));color:#fff;border:none;border-radius:10px;font-family:var(--disp);font-size:.92rem;font-weight:700;cursor:pointer;transition:all .22s;margin-top:6px;letter-spacing:0;box-shadow:0 4px 16px rgba(109,40,217,.3)}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(109,40,217,.4)}
+.amsg{padding:10px 14px;border-radius:10px;font-size:.82rem;font-weight:600;display:none;margin-bottom:12px}
+.amsg.show{display:block}
+.amsg.err{background:var(--error-p);border:1px solid var(--error-b);color:var(--error)}
+.amsg.ok{background:var(--success-p);border:1px solid var(--success-b);color:var(--success)}
+.auth-footer{position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:.68rem;color:#BCC1CE}
+
+.topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--border),0 4px 20px rgba(0,0,0,.04)}
+.tb-brand{display:flex;align-items:center;gap:9px}
+.tb-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--orange),#F5D06F);border:1px solid rgba(76,29,149,.18);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(214,168,58,.34)}
+.tb-mark svg{width:16px;height:16px}
+.tb-logo{font-family:var(--logo);font-size:.92rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.tb-logo .ls{color:var(--blue)}.tb-logo .shore{color:var(--text)}
+.tb-vtag{font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:linear-gradient(135deg,var(--orange),#F5D06F);color:#3A2500;padding:2px 8px;border-radius:30px}
+.tb-right{display:flex;align-items:center;gap:10px}
+.vchip{display:flex;align-items:center;gap:8px;background:var(--off);border:1px solid var(--border);border-radius:30px;padding:5px 14px 5px 5px;transition:all .2s}
+.vchip:hover{border-color:var(--blue-pm)}
+.vc-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--blue-l));display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--disp);font-weight:700;font-size:.78rem}
+.vc-n{font-size:.82rem;font-weight:600;color:var(--text)}
+.btn-logout{padding:6px 14px;background:none;border:1.5px solid var(--border);border-radius:30px;font-family:var(--body);font-size:.75rem;font-weight:600;color:var(--mid);cursor:pointer;transition:all .2s}
+.btn-logout:hover{border-color:var(--error-b);color:var(--error);background:var(--error-p)}
+.fb-status{font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:30px;display:inline-flex;align-items:center;gap:5px;letter-spacing:.02em}
+.fb-status.ok{background:var(--success-p);border:1px solid var(--success-b);color:var(--success)}
+.fb-status.err{background:var(--error-p);border:1px solid var(--error-b);color:var(--error)}
+.fb-status.loading{background:var(--blue-p);border:1px solid var(--blue-pm);color:var(--blue)}
+
+.dash-layout{display:grid;grid-template-columns:250px 1fr;min-height:calc(100vh - 60px)}
+.sidebar{background:var(--white);border-right:1px solid var(--border);padding:20px 12px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+.sb-sec{font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9CA3AF;padding:14px 10px 6px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;border:none;background:none;font-family:var(--body);font-size:.84rem;font-weight:500;color:var(--mid);width:100%;text-align:left;transition:all .18s;position:relative}
+.sb-item:hover{background:var(--blue-p);color:var(--blue-d)}
+.sb-item.active{background:linear-gradient(135deg,var(--blue-p),#EFE4FF);color:var(--blue);font-weight:700}
+.sb-item.active .si-ic{background:var(--blue);color:#fff}
+.sb-item.locked{opacity:.55}
+.sb-item.locked::after{content:'Locked';font-size:.58rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--orange-d);background:var(--orange-p);border:1px solid var(--border);border-radius:30px;padding:2px 7px;margin-left:auto}
+.si-ic{width:28px;height:28px;border-radius:8px;background:var(--off);display:flex;align-items:center;justify-content:center;font-size:.82rem;transition:all .18s;flex-shrink:0}
+.sb-lbl{flex:1}
+.sb-badge{width:7px;height:7px;border-radius:50%;background:var(--error);flex-shrink:0}
+
+.panels{flex:1;min-width:0}
+.panel{display:none;padding:28px 32px;animation:panelIn .3s ease}
+.panel.active{display:block}
+@keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ph{margin-bottom:26px}
+.ph-title{font-family:var(--disp);font-size:1.3rem;font-weight:800;letter-spacing:0;margin-bottom:4px}
+.ph-sub{font-size:.85rem;color:var(--mid);line-height:1.5}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.card-title{font-family:var(--disp);font-size:.88rem;font-weight:800;letter-spacing:0;margin-bottom:18px;display:flex;align-items:center;gap:8px;color:var(--text)}
+.card-title-ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;background:var(--blue-p)}
+.setup-gate{background:linear-gradient(135deg,var(--orange-p),#fff);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px;display:none;align-items:flex-start;gap:12px;box-shadow:var(--shadow)}
+.setup-gate.show{display:flex}
+.setup-gate-ic{width:32px;height:32px;border-radius:9px;background:var(--orange);color:#2f1d00;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:.72rem;font-weight:800;flex-shrink:0}
+.setup-gate-title{font-family:var(--disp);font-size:.9rem;font-weight:800;color:var(--text);margin-bottom:3px}
+.setup-gate-text{font-size:.78rem;color:var(--mid);line-height:1.5}
+.setup-gate-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.panel.setup-locked > :not(.ph):not(.setup-gate){display:none!important}
+
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .22s;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 60%,rgba(109,40,217,.05));pointer-events:none}
+.stat-card:hover{border-color:var(--blue-pm);box-shadow:0 4px 24px rgba(109,40,217,.14);transform:translateY(-2px)}
+.sc-ic-wrap{width:40px;height:40px;border-radius:10px;background:var(--blue-p);display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:12px}
+.sc-v{font-family:var(--disp);font-size:1.6rem;font-weight:800;letter-spacing:0;color:var(--text)}
+.sc-l{font-size:.72rem;color:var(--mid);margin-top:3px;font-weight:500;letter-spacing:.02em}
+
+.btn-blue{padding:10px 22px;background:linear-gradient(135deg,var(--blue-l),var(--blue-d));color:#fff;border:none;border-radius:10px;font-family:var(--disp);font-size:.85rem;font-weight:700;cursor:pointer;transition:all .22s;box-shadow:0 2px 10px rgba(109,40,217,.25);display:inline-flex;align-items:center;gap:7px}
+.btn-blue:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(109,40,217,.35)}
+.btn-orange{padding:10px 22px;background:linear-gradient(135deg,var(--orange),var(--orange-d));color:#fff;border:none;border-radius:10px;font-family:var(--disp);font-size:.85rem;font-weight:700;cursor:pointer;transition:all .22s;box-shadow:0 2px 10px rgba(214,168,58,.34);display:inline-flex;align-items:center;gap:7px}
+.btn-orange:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(214,168,58,.42)}
+.btn-sec{padding:9px 18px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;font-family:var(--body);font-size:.83rem;font-weight:600;color:var(--mid);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
+.btn-sec:hover{border-color:var(--blue-pm);color:var(--blue);background:var(--blue-p)}
+.smsg{padding:9px 13px;border-radius:10px;font-size:.8rem;font-weight:600;display:none}
+.smsg.show{display:inline-flex;align-items:center;gap:6px}
+.smsg.ok{background:var(--success-p);border:1px solid var(--success-b);color:var(--success)}
+.smsg.err{background:var(--error-p);border:1px solid var(--error-b);color:var(--error)}
+
+#shop-map{height:260px;border-radius:12px;margin-top:12px;border:1px solid var(--border);overflow:hidden}
+.map-hint{font-size:.74rem;color:var(--mid);margin-top:8px;display:flex;align-items:center;gap:6px;font-weight:500}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;cursor:pointer}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* SIZE BUTTONS */
+.size-picker-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
+.size-picker-label{font-size:.72rem;font-weight:700;color:var(--mid);letter-spacing:.05em;text-transform:uppercase}
+.size-options,.age-options{display:flex;gap:8px;flex-wrap:wrap}
+.size-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--body);font-size:.84rem;font-weight:700;cursor:pointer;background:var(--white);color:var(--mid);transition:all .18s;user-select:none}
+.size-btn:hover{border-color:var(--blue-pm);color:var(--blue);background:var(--blue-p)}
+.size-btn.sel{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 2px 10px rgba(109,40,217,.3)}
+.age-btn{padding:7px 13px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--body);font-size:.78rem;font-weight:700;cursor:pointer;background:var(--white);color:var(--mid);transition:all .18s;user-select:none}
+.age-btn:hover{border-color:#C4B5FD;color:var(--purple);background:#F5F3FF}
+.age-btn.sel{background:var(--purple);border-color:var(--purple);color:#fff;box-shadow:0 2px 10px rgba(124,58,237,.28)}
+
+/* CAT INFO STRIPS */
+.cat-info-strip{display:none;align-items:center;gap:9px;padding:10px 14px;border-radius:10px;font-size:.8rem;font-weight:600;margin-bottom:14px}
+.cat-info-strip.show{display:flex}
+.cis-fashion{background:var(--blue-p);border:1px solid var(--blue-pm);color:var(--blue)}
+.cis-kids{background:#EDE9FE;border:1px solid #DDD6FE;color:#5B21B6}
+.cis-meat{background:var(--orange-p);border:1px solid #E8C766;color:var(--orange-d)}
+
+/* MEAT PRICING */
+.meat-pricing-card{background:linear-gradient(135deg,#FFFCF1,#FFF7DA);border:1px solid #E8C766;border-radius:13px;padding:18px;margin-bottom:14px}
+.meat-pricing-title{font-size:.72rem;font-weight:800;color:var(--orange-d);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.meat-price-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:12px}
+.meat-price-row{background:#fff;border:1px solid #E8C766;border-radius:9px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;transition:box-shadow .18s}
+.meat-price-row:hover{box-shadow:0 2px 12px rgba(214,168,58,.18)}
+.meat-price-kg{font-size:.65rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.04em}
+.meat-price-val{font-family:var(--disp);font-size:1.05rem;font-weight:800;color:var(--orange)}
+
+/* PRODUCTS */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.prod-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .22s;box-shadow:var(--shadow)}
+.prod-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--blue-pm)}
+.prod-img-wrap{width:100%;height:130px;position:relative;overflow:hidden;background:var(--off)}
+.prod-img{width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+.prod-card:hover .prod-img{transform:scale(1.05)}
+.prod-ph{width:100%;height:130px;background:linear-gradient(135deg,var(--blue-p),var(--orange-p));display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+.prod-info{padding:12px 14px 8px}
+.prod-name{font-family:var(--disp);font-size:.83rem;font-weight:800;letter-spacing:0;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prod-price{font-size:1rem;font-weight:700;color:var(--orange)}
+.prod-cat{font-size:.65rem;color:var(--mid);margin-top:2px;display:flex;align-items:center;gap:4px}
+.prod-tags{padding:0 14px 6px;display:flex;gap:4px;flex-wrap:wrap}
+.prod-tag-size{font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--blue-p);color:var(--blue);border:1px solid var(--blue-pm)}
+.prod-tag-age{font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:5px;background:#EDE9FE;color:var(--purple);border:1px solid #DDD6FE}
+.prod-tag-meat{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--orange-p);color:var(--orange-d);border:1px solid #E8C766}
+.prod-stock-bar{height:3px;background:var(--off);border-radius:3px;margin:8px 14px;overflow:hidden}
+.prod-stock-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.prod-stock-lbl{padding:0 14px 6px;display:flex;justify-content:space-between;align-items:center}
+.prod-actions{padding:0 10px 10px;display:flex;gap:6px}
+.btn-del{flex:1;padding:6px;background:var(--error-p);border:1px solid var(--error-b);border-radius:8px;font-size:.7rem;font-weight:700;color:var(--error);cursor:pointer;transition:all .18s;font-family:var(--body)}
+.btn-del:hover{background:var(--error);color:#fff}
+.btn-restock{flex:1;padding:6px;background:var(--blue-p);border:1px solid var(--blue-pm);border-radius:8px;font-size:.7rem;font-weight:700;color:var(--blue);cursor:pointer;transition:all .18s;font-family:var(--body)}
+.btn-restock:hover{background:var(--blue);color:#fff}
+
+/* IMAGE UPLOAD */
+.img-source-tabs{display:flex;background:var(--off);border-radius:10px;padding:4px;gap:4px;margin-bottom:12px}
+.img-tab{flex:1;padding:8px;text-align:center;border:none;background:none;font-family:var(--body);font-size:.8rem;font-weight:600;color:var(--mid);border-radius:7px;cursor:pointer;transition:all .2s}
+.img-tab.active{background:var(--white);color:var(--text);box-shadow:0 1px 6px rgba(0,0,0,.1)}
+.img-upload-zone{border:2px dashed var(--border);border-radius:12px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .22s;background:var(--off);position:relative;overflow:hidden}
+.img-upload-zone:hover,.img-upload-zone.drag{border-color:var(--blue);background:var(--blue-p)}
+.img-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.iuz-icon{font-size:2rem;margin-bottom:8px;display:block}
+.iuz-text{font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:3px}
+.iuz-hint{font-size:.7rem;color:var(--mid)}
+.iuz-progress{height:4px;background:var(--border);border-radius:4px;margin-top:12px;overflow:hidden;display:none}
+.iuz-progress.show{display:block}
+.iuz-progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--orange));border-radius:4px;transition:width .3s ease}
+.img-preview-box{border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--off);position:relative}
+.img-preview-box img{width:100%;height:140px;object-fit:cover;display:block}
+.img-remove-btn{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.6);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;transition:all .2s}
+.img-remove-btn:hover{background:var(--error)}
+.img-ph-empty{width:100%;height:100px;border-radius:12px;background:var(--off);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;font-size:.76rem;color:var(--mid)}
+
+/* INFO / SUMMARY */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.info-row2{display:flex;flex-direction:column;gap:3px;padding:10px 12px;background:var(--off);border-radius:10px}
+.ik{font-size:.62rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em}
+.iv{font-size:.86rem;font-weight:600;color:var(--text)}
+.live-badge{display:inline-flex;align-items:center;gap:6px;background:var(--success-p);border:1px solid var(--success-b);color:var(--success);font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:30px}
+.live-d{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 1.6s infinite}
+
+/* DOCUMENTS */
+.doc-field{display:flex;flex-direction:column;gap:7px}
+.doc-label{font-size:.72rem;font-weight:700;color:var(--mid);letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.doc-badge-req{font-size:.6rem;font-weight:700;background:var(--error-p);color:var(--error);padding:2px 7px;border-radius:30px;border:1px solid var(--error-b)}
+.doc-upload-box{border:2px dashed var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--off);position:relative}
+.doc-upload-box:hover{border-color:var(--blue);background:var(--blue-p)}
+.doc-upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.doc-upload-icon{font-size:1.5rem;margin-bottom:5px}
+.doc-upload-text{font-size:.76rem;color:var(--mid);font-weight:500}
+.doc-upload-hint{font-size:.65rem;color:#9CA3AF;margin-top:3px}
+.doc-uploaded{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--success-p);border:1px solid var(--success-b);border-radius:10px;margin-top:6px}
+.doc-uploaded-name{font-size:.78rem;font-weight:600;color:var(--success);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-remove-btn{background:none;border:none;cursor:pointer;color:var(--error);font-size:.75rem;font-weight:700;padding:2px 6px;border-radius:5px;transition:background .15s}
+.doc-remove-btn:hover{background:var(--error-p)}
+.doc-verify-strip{display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:12px;margin-bottom:16px}
+.doc-verify-strip.pending{background:var(--warn-p);border:1px solid var(--warn-b)}
+.doc-verify-strip.verified{background:var(--success-p);border:1px solid var(--success-b)}
+.doc-verify-strip.incomplete{background:var(--error-p);border:1px solid var(--error-b)}
+.dvs-ic{font-size:1.3rem}
+.dvs-text{font-size:.82rem;font-weight:700}
+.dvs-text.pending{color:var(--warn)}.dvs-text.verified{color:var(--success)}.dvs-text.incomplete{color:var(--error)}
+.dvs-sub{font-size:.72rem;color:var(--mid);margin-top:1px}
+.doc-number-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+
+/* ORDERS */
+.pay-pill{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:30px;letter-spacing:.01em;white-space:nowrap}
+.pay-pill-cod{background:var(--warn-p);color:var(--warn);border:1px solid var(--warn-b)}
+.pay-pill-online{background:var(--blue-p);color:var(--blue);border:1px solid var(--blue-pm)}
+.pay-info-block{display:flex;flex-direction:column;gap:3px}
+.pay-info-label{font-size:.62rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.05em}
+.pay-info-method.cod{color:var(--warn);font-weight:700;font-size:.82rem}
+.pay-info-method.online{color:var(--blue);font-weight:700;font-size:.82rem}
+.pay-info-hint{font-size:.68rem;color:var(--mid)}
+.cod-reminder{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--warn-p);border:1px solid var(--warn-b);border-radius:9px;font-size:.76rem;font-weight:600;color:#92600A;margin-top:8px}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:30px;font-size:.7rem;font-weight:700;white-space:nowrap}
+.sp-confirmed{background:var(--warn-p);color:var(--warn)}.sp-packed{background:#EDE9FE;color:var(--purple)}
+.sp-ready{background:#E0F7FA;color:var(--teal)}.sp-picked{background:var(--blue-p);color:var(--blue)}
+.sp-out{background:#FFF3E0;color:#E65100}.sp-delivered{background:var(--success-p);color:var(--success)}
+.sp-cancelled{background:var(--error-p);color:var(--error)}
+.order-stepper{display:flex;align-items:center;margin:12px 0}
+.os-step{display:flex;flex-direction:column;align-items:center;position:relative;flex:1}
+.os-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:var(--mid);transition:all .3s;z-index:1}
+.os-dot.done{background:var(--success);border-color:var(--success);color:#fff}
+.os-dot.active{background:var(--orange);border-color:var(--orange);color:#fff;box-shadow:0 0 0 4px rgba(214,168,58,.22)}
+.os-label{font-size:.56rem;color:var(--mid);margin-top:4px;text-align:center;max-width:60px;line-height:1.3;font-weight:600}
+.os-label.active{color:var(--orange);font-weight:700}.os-label.done{color:var(--success)}
+.os-line{flex:1;height:2px;background:var(--border);margin-top:-10px;transition:background .3s}
+.os-line.done{background:var(--success)}
+.status-advance-btn{font-size:.72rem;font-weight:700;padding:6px 13px;border-radius:8px;cursor:pointer;border:none;font-family:var(--body);transition:all .18s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.status-advance-btn.advance{background:var(--blue-p);color:var(--blue);border:1px solid var(--blue-pm)}
+.status-advance-btn.advance:hover{background:var(--blue);color:#fff}
+.status-advance-btn.assign{background:var(--orange-p);color:var(--orange-d);border:1px solid #E8C766}
+.status-advance-btn.assign:hover{background:var(--orange);color:#fff}
+.status-advance-btn.handover{background:#121212;color:#fff;border:1px solid #E53935;box-shadow:0 6px 18px rgba(229,57,53,.18)}
+.status-advance-btn.handover:hover{background:#E53935;transform:translateY(-1px)}
+.status-advance-btn.cancel{background:var(--error-p);color:var(--error);border:1px solid var(--error-b)}
+.status-advance-btn.cancel:hover{background:var(--error);color:#fff}
+.stock-alert{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:10px;margin-bottom:10px}
+.stock-alert.low{background:var(--warn-p);border:1px solid var(--warn-b)}
+.stock-alert.out{background:var(--error-p);border:1px solid var(--error-b)}
+.sa-text.low{color:var(--warn);font-size:.82rem;font-weight:700}
+.sa-text.out{color:var(--error);font-size:.82rem;font-weight:700}
+
+/* REVENUE */
+.rev-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.rev-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .22s;box-shadow:var(--shadow)}
+.rev-card:hover{border-color:#E8C766;box-shadow:0 4px 20px rgba(214,168,58,.16);transform:translateY(-2px)}
+.rev-ic{width:40px;height:40px;border-radius:10px;background:var(--orange-p);display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:12px}
+.rev-v{font-family:var(--disp);font-size:1.5rem;font-weight:800;letter-spacing:0;color:var(--orange)}
+.rev-l{font-size:.7rem;color:var(--mid);margin-top:3px;font-weight:500}
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:8px;height:130px;padding:0 4px}
+.chart-bar-col{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1}
+.chart-bar{width:100%;background:linear-gradient(180deg,var(--orange),var(--orange-d));border-radius:5px 5px 0 0;min-height:4px;transition:height .5s cubic-bezier(.34,1.56,.64,1)}
+.chart-bar-lbl{font-size:.62rem;color:var(--mid);white-space:nowrap;font-weight:500}
+.dl-btns{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.btn-dl{display:flex;align-items:center;gap:7px;padding:9px 20px;border:1.5px solid var(--border);background:var(--white);border-radius:10px;font-family:var(--body);font-size:.83rem;font-weight:600;color:var(--text);cursor:pointer;transition:all .2s}
+.btn-dl:hover{border-color:var(--blue-pm);color:var(--blue);background:var(--blue-p)}
+.btn-dl.pdf:hover{border-color:var(--error-b);color:var(--error);background:var(--error-p)}
+.filter-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.filter-sel{padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:var(--body);font-size:.82rem;color:var(--text);background:var(--white);outline:none;cursor:pointer;transition:border-color .18s}
+.filter-sel:focus{border-color:var(--blue)}
+.orders-count{font-size:.8rem;color:var(--mid);font-weight:600;padding:4px 10px;background:var(--off);border-radius:30px;border:1px solid var(--border)}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--white);border-radius:20px;padding:28px;width:440px;max-width:95vw;box-shadow:var(--shadow-lg);animation:modalUp .3s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto;border:1px solid var(--border)}
+@keyframes modalUp{from{opacity:0;transform:translateY(30px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.modal-title{font-family:var(--disp);font-size:1.05rem;font-weight:800;margin-bottom:5px;letter-spacing:0}
+.modal-sub{font-size:.83rem;color:var(--mid);margin-bottom:20px;line-height:1.5}
+.modal-actions{display:flex;gap:10px;margin-top:18px}
+
+/* PARTNERS */
+.partner-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .2s;background:var(--white)}
+.partner-row:hover{border-color:var(--orange);background:var(--orange-p);transform:translateX(3px)}
+.partner-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--blue-l));display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;font-weight:800;flex-shrink:0;overflow:hidden}
+.partner-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.partner-info{flex:1;min-width:0}
+.partner-name{font-weight:700;font-size:.88rem;margin-bottom:3px}
+.partner-meta{font-size:.72rem;color:var(--mid);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.partner-dist-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:30px;background:var(--success-p);color:var(--success);border:1px solid var(--success-b)}
+.partner-dist-badge.far{background:var(--warn-p);color:var(--warn);border-color:var(--warn-b)}
+.btn-assign-now{padding:6px 14px;background:linear-gradient(135deg,var(--orange),var(--orange-d));color:#fff;border:none;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:var(--disp);flex-shrink:0;transition:all .2s}
+.btn-assign-now:hover{transform:scale(1.05);box-shadow:0 4px 14px rgba(214,168,58,.42)}
+.partner-assigned-chip{display:inline-flex;align-items:center;gap:7px;background:var(--success-p);border:1px solid var(--success-b);border-radius:30px;padding:4px 12px 4px 4px;margin-top:8px}
+.pac-av{width:22px;height:22px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;font-weight:800}
+.pac-text{font-size:.74rem;font-weight:700;color:var(--success)}
+.pac-vehicle{font-size:.68rem;color:var(--mid)}
+
+.dp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.dp-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:all .22s;position:relative;box-shadow:var(--shadow)}
+.dp-card:hover{border-color:#E8C766;box-shadow:0 6px 24px rgba(214,168,58,.14)}
+.dp-card.online{border-color:var(--success-b)}
+.dp-card-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--blue-l));display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;font-weight:800;margin-bottom:12px;overflow:hidden}
+.dp-card-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.dp-card-name{font-weight:700;font-size:.9rem;margin-bottom:2px}
+.dp-card-meta{font-size:.72rem;color:var(--mid)}
+.dp-online-dot{position:absolute;top:14px;right:14px;width:10px;height:10px;border-radius:50%;background:#D1D5DB;border:2px solid #fff;box-shadow:0 0 0 2px var(--border)}
+.dp-online-dot.online{background:var(--success);animation:pulse 1.6s infinite;box-shadow:0 0 0 3px rgba(5,150,105,.15)}
+.dp-card-stats{display:flex;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.dp-stat-v{font-family:var(--disp);font-size:.95rem;font-weight:800;color:var(--text)}
+.dp-stat-l{font-size:.62rem;color:var(--mid);margin-top:1px}
+
+.empty-state{text-align:center;padding:56px 24px}
+.es-ic{font-size:3rem;margin-bottom:12px;opacity:.6}
+.es-t{font-family:var(--disp);font-size:1rem;font-weight:800;margin-bottom:6px;letter-spacing:0}
+.es-s{font-size:.84rem;color:var(--mid);line-height:1.6}
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:12px;font-size:.84rem;font-weight:600;z-index:9999;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-lg)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:var(--success);color:#fff}
+.toast.err{background:var(--error);color:#fff}
+.toast.info{background:var(--blue);color:#fff}
+
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.5}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:900px){
+ .auth-left{display:none}.auth-right{width:100%;padding:36px 28px}
+ .dash-layout{grid-template-columns:1fr}.sidebar{display:none}
+ .stat-row{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr}
+ .doc-number-row{grid-template-columns:1fr}.rev-grid{grid-template-columns:1fr 1fr}
+ .panel{padding:20px 16px}
+}
+</style>
+</head>
+<body>
+<!-- AUTH -->
+<div id="screen-auth">
+ <div class="auth-left">
+ <div class="auth-noise"></div><div class="auth-grid"></div><div class="auth-glow"></div><div class="auth-glow2"></div>
+ <div class="al-brand">
+ <div class="al-logo-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="white" opacity=".9"/><circle cx="12" cy="9" r="2.5" fill="var(--orange)"/></svg></div>
+ <div><div class="al-wordmark"><span class="nex">NEX</span><span class="shore">CART</span></div></div>
+ <div class="al-tag">Vendor Portal</div>
+ </div>
+ <div class="auth-hero">
+ <h2>Your shop.<br>Your customers.<br><span class="outline">Your city.</span></h2>
+ <p>Grow your local shop with Nexcart and reach nearby customers, with products and orders synced in real time.</p>
+ </div>
+ <div class="auth-perks">
+ <div class="aperk"><div class="ap-ic">DP</div><span>Assign orders to nearby delivery partners</span></div>
+ <div class="aperk"><div class="ap-ic">RT</div><span>Real-time order & delivery tracking</span></div>
+ <div class="aperk"><div class="ap-ic">ST</div><span>Live stock updates on every order</span></div>
+ <div class="aperk"><div class="ap-ic">7</div><span>7 km customer reach, zero fees</span></div>
+ </div>
+ <div class="auth-stats">
+ <div class="ast"><div class="ast-v">500<span>+</span></div><div class="ast-l">Vendors</div></div>
+ <div class="ast"><div class="ast-v">60<span>min</span></div><div class="ast-l">Avg Delivery</div></div>
+ <div class="ast"><div class="ast-v">7<span>km</span></div><div class="ast-l">Radius</div></div>
+ </div>
+ </div>
+ <div class="auth-right">
+ <div class="auth-form">
+ <div class="auth-ttl">Welcome back</div>
+ <div class="auth-sub">Login or create your vendor account to get started.</div>
+ <div class="atabs">
+ <button class="atab active" onclick="switchAuth('login')">Login</button>
+ <button class="atab" onclick="switchAuth('register')">Register</button>
+ </div>
+ <div id="ng" class="fg" style="display:none"><label class="fl">Full Name</label><input class="fi" id="a-name" type="text" placeholder="e.g. Ramesh Kumar"></div>
+ <div class="fg"><label class="fl">Email Address</label><input class="fi" id="a-email" type="email" placeholder="you@example.com"></div>
+ <div class="fg"><label class="fl">Password</label><input class="fi" id="a-pass" type="password" placeholder="Min. 6 characters"></div>
+ <div class="amsg err" id="a-err"></div><div class="amsg ok" id="a-ok"></div>
+ <button class="btn-submit" id="a-btn" onclick="handleAuth()">Login</button>
+ </div>
+ <div class="auth-footer">Powered by Navistara Groups</div>
+ </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dash">
+ <div class="topbar">
+ <div class="tb-brand">
+ <div class="tb-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="white" opacity=".9"/><circle cx="12" cy="9" r="2.5" fill="var(--orange)"/></svg></div>
+ <div class="tb-logo"><span class="ls">NEX</span><span class="shore">CART</span></div>
+ <div class="tb-vtag">Vendor</div>
+ </div>
+ <div class="tb-right">
+ <div id="fb-indicator" class="fb-status loading">Connecting</div>
+ <div class="vchip"><div class="vc-av" id="vc-av">V</div><div class="vc-n" id="vc-name">Vendor</div></div>
+ <button class="btn-logout" onclick="doLogout()">Sign out</button>
+ </div>
+ </div>
+
+ <div class="dash-layout">
+ <div class="sidebar">
+ <div class="sb-sec">Main</div>
+ <button class="sb-item active" onclick="goPanel('overview')"><div class="si-ic">OV</div><span class="sb-lbl">Overview</span></button>
+ <div class="sb-sec">My Shop</div>
+ <button class="sb-item" onclick="goPanel('shop')"><div class="si-ic">SH</div><span class="sb-lbl">Shop Setup</span></button>
+ <button class="sb-item" onclick="goPanel('documents')"><div class="si-ic">DC</div><span class="sb-lbl">Documents</span></button>
+ <button class="sb-item" onclick="goPanel('products')"><div class="si-ic">PR</div><span class="sb-lbl">My Products</span></button>
+ <button class="sb-item" onclick="goPanel('add')"><div class="si-ic">AD</div><span class="sb-lbl">Add Product</span></button>
+ <div class="sb-sec">Business</div>
+ <button class="sb-item" onclick="goPanel('orders')"><div class="si-ic">OR</div><span class="sb-lbl">Orders</span><span id="new-orders-dot" class="sb-badge" style="display:none"></span></button>
+ <button class="sb-item" onclick="goPanel('partners')"><div class="si-ic">DP</div><span class="sb-lbl">Delivery Partners</span></button>
+ <button class="sb-item" onclick="goPanel('revenue')"><div class="si-ic">RV</div><span class="sb-lbl">Revenue</span></button>
+ </div>
+
+ <div class="panels">
+
+ <!-- Overview -->
+<div class="panel active" id="panel-overview">
+ <div class="ph"><div class="ph-title">Dashboard</div><div class="ph-sub" id="ov-sub">Loading your shop</div></div>
+ <div class="setup-gate" id="setup-gate-overview">
+ <div class="setup-gate-ic">SET</div>
+ <div><div class="setup-gate-title">Complete setup to start selling</div><div class="setup-gate-text" id="setup-gate-overview-text">Add shop details and upload required documents before adding products or receiving orders.</div><div class="setup-gate-actions"><button class="btn-blue" onclick="goPanel('shop')">Shop Setup</button><button class="btn-sec" onclick="goPanel('documents')">Documents</button></div></div>
+ </div>
+ <div class="stat-row">
+ <div class="stat-card"><div class="sc-ic-wrap">PR</div><div class="sc-v" id="st-p">0</div><div class="sc-l">Total Products</div></div>
+ <div class="stat-card"><div class="sc-ic-wrap">DP</div><div class="sc-v" id="st-dp">0</div><div class="sc-l">Partners Online</div></div>
+ <div class="stat-card"><div class="sc-ic-wrap">OK</div><div class="sc-v" id="st-s">0</div><div class="sc-l">In Stock</div></div>
+ <div class="stat-card"><div class="sc-ic-wrap">SH</div><div class="sc-v" id="st-st"></div><div class="sc-l">Shop Status</div></div>
+ </div>
+ <div id="stock-alerts-wrap"></div>
+ <div class="card"><div class="card-title"><div class="card-title-ic">NC</div>Shop Summary</div><div id="shop-summary"><p style="color:var(--mid);font-size:.86rem">Complete your shop setup to go live on Nexcart.</p></div></div>
+ <div class="card"><div class="card-title"><div class="card-title-ic">DC</div>Document Status</div><div id="doc-summary-overview"></div></div>
+ </div>
+
+ <!-- Shop Setup -->
+ <div class="panel" id="panel-shop">
+ <div class="ph"><div class="ph-title">Shop Setup</div><div class="ph-sub">Your shop details visible to customers on Nexcart.</div></div>
+ <div class="card">
+ <div class="card-title"><div class="card-title-ic">BI</div>Basic Information</div>
+ <div class="form-row" style="margin-bottom:13px">
+ <div class="fg" style="margin:0"><label class="fl">Shop Name *</label><input class="fi" id="s-name" type="text" placeholder="e.g. Ramesh Stores"></div>
+ <div class="fg" style="margin:0"><label class="fl">Category *</label>
+ <select class="fi" id="s-cat">
+ <option value="">Select category</option>
+ <option>Grocery</option><option>Fruits &amp; Vegetables</option><option>Dairy &amp; Eggs</option><option>Bakery</option><option>Restaurants</option><option>Meat &amp; Seafood</option><option>Snacks &amp; Beverages</option><option>Home Essentials</option><option>Personal Care</option><option>Baby Care</option><option>Stationery</option><option>Flowers &amp; Gifts</option><option>Electronics Accessories</option>
+ </select>
+ </div>
+ </div>
+ <div class="fg" style="margin-bottom:13px"><label class="fl">Full Address *</label><input class="fi" id="s-addr" type="text" placeholder="e.g. 12, RS Puram, Coimbatore - 641002"></div>
+ <div class="form-row" style="margin-bottom:13px">
+ <div class="fg" style="margin:0"><label class="fl">Phone Number</label><input class="fi" id="s-phone" type="tel" placeholder="+91 98765 43210"></div>
+ <div class="fg" style="margin:0"><label class="fl">Opening Hours</label><input class="fi" id="s-hours" type="text" placeholder="9 AM 9 PM"></div>
+ </div>
+ <div class="fg"><label class="fl">Short Description</label><input class="fi" id="s-desc" type="text" placeholder="Brief description of your shop"></div>
+ </div>
+ <div class="card">
+ <div class="card-title"><div class="card-title-ic">LC</div>Pin Your Shop Location</div>
+ <p style="font-size:.83rem;color:var(--mid);margin-bottom:10px">Click the map to pin your exact shop location, or use auto-detect.</p>
+ <button class="btn-sec" onclick="detectLoc()">Auto-detect my location</button>
+ <div id="shop-map"></div>
+ <div class="map-hint"><span id="map-txt">No location pinned</span></div>
+ </div>
+ <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+ <button class="btn-blue" onclick="saveShop()">Save Shop</button>
+ <button class="btn-sec" onclick="goPanel('documents')">Upload Documents</button>
+ <div class="smsg ok" id="shop-ok"></div><div class="smsg err" id="shop-err"></div>
+ </div>
+ </div>
+
+ <!-- Documents -->
+ <div class="panel" id="panel-documents">
+ <div class="ph"><div class="ph-title">Shop Documents</div><div class="ph-sub">Upload business certificates for verified seller status.</div></div>
+ <div id="doc-verify-strip-wrap"></div>
+ <div class="card">
+ <div class="card-title"><div class="card-title-ic">GST</div>GST Registration</div>
+ <div class="doc-number-row">
+ <div class="fg" style="margin:0"><label class="fl">GST Number <span class="doc-badge-req">Required</span></label><input class="fi" id="d-gst-num" type="text" placeholder="22AAAAA0000A1Z5" maxlength="15" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+ <div class="fg" style="margin:0"><label class="fl">GST Registration Date</label><input class="fi" id="d-gst-date" type="date"></div>
+ </div>
+ <div class="doc-field">
+ <div class="doc-label">GST Certificate <span class="doc-badge-req">Required</span></div>
+ <div class="doc-upload-box" id="gst-cert-box" onclick="triggerUpload('gst-cert-file')">
+ <input type="file" id="gst-cert-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleDocUpload('gst-cert','gst-cert-file','gst-cert-box')">
+ <div class="doc-upload-icon">PDF</div><div class="doc-upload-text">Click to upload GST Certificate</div><div class="doc-upload-hint">PDF, JPG, PNG. Max 5 MB</div>
+ </div>
+ <div class="doc-uploaded" id="gst-cert-uploaded" style="display:none"><span>Uploaded</span><span class="doc-uploaded-name" id="gst-cert-name"></span><button class="doc-remove-btn" onclick="removeDoc('gst-cert')">Remove</button></div>
+ </div>
+ </div>
+ <div class="card">
+ <div class="card-title"><div class="card-title-ic">REG</div>Shop Registration</div>
+ <div class="doc-number-row">
+ <div class="fg" style="margin:0"><label class="fl">Shop Reg. Number <span class="doc-badge-req">Required</span></label><input class="fi" id="d-shop-reg-num" type="text" placeholder="SHO/CBE/2024/12345"></div>
+ <div class="fg" style="margin:0"><label class="fl">Valid Until</label><input class="fi" id="d-shop-reg-expiry" type="date"></div>
+ </div>
+ <div class="doc-field">
+ <div class="doc-label">Shop Registration Certificate <span class="doc-badge-req">Required</span></div>
+ <div class="doc-upload-box" id="shop-cert-box" onclick="triggerUpload('shop-cert-file')">
+ <input type="file" id="shop-cert-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleDocUpload('shop-cert','shop-cert-file','shop-cert-box')">
+ <div class="doc-upload-icon">PDF</div><div class="doc-upload-text">Click to upload Shop Certificate</div><div class="doc-upload-hint">PDF, JPG, PNG. Max 5 MB</div>
+ </div>
+ <div class="doc-uploaded" id="shop-cert-uploaded" style="display:none"><span>Uploaded</span><span class="doc-uploaded-name" id="shop-cert-name"></span><button class="doc-remove-btn" onclick="removeDoc('shop-cert')">Remove</button></div>
+ </div>
+ </div>
+ <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+ <button class="btn-blue" onclick="saveDocs()">Save Documents</button>
+ <div class="smsg ok" id="doc-ok"></div><div class="smsg err" id="doc-err"></div>
+ </div>
+ </div>
+
+ <!-- Products -->
+<div class="panel" id="panel-products">
+ <div class="ph"><div class="ph-title">My Products</div><div class="ph-sub">All products listed in your shop.</div></div>
+ <div class="setup-gate" id="setup-gate-products">
+ <div class="setup-gate-ic">SET</div>
+ <div><div class="setup-gate-title">Products are locked until setup is complete</div><div class="setup-gate-text" id="setup-gate-products-text">Save shop details and required certificates first.</div><div class="setup-gate-actions"><button class="btn-blue" onclick="goPanel('shop')">Shop Setup</button><button class="btn-sec" onclick="goPanel('documents')">Documents</button></div></div>
+ </div>
+ <div id="stock-alerts-prod-wrap"></div>
+ <div id="prod-list"><div class="empty-state"><div class="es-ic">PR</div><div class="es-t">No products yet</div><div class="es-s">Go to Add Product to list your first item.</div></div></div>
+ </div>
+
+ <!-- Add Product -->
+<div class="panel" id="panel-add">
+ <div class="ph"><div class="ph-title">Add Product</div><div class="ph-sub">List a new product in your shop.</div></div>
+ <div class="setup-gate" id="setup-gate-add">
+ <div class="setup-gate-ic">SET</div>
+ <div><div class="setup-gate-title">Finish setup before adding products</div><div class="setup-gate-text" id="setup-gate-add-text">Products can be added only after shop details and required certificates are saved.</div><div class="setup-gate-actions"><button class="btn-blue" onclick="goPanel('shop')">Shop Setup</button><button class="btn-sec" onclick="goPanel('documents')">Documents</button></div></div>
+ </div>
+ <div class="card">
+ <div class="form-row" style="margin-bottom:13px">
+ <div class="fg" style="margin:0"><label class="fl">Product Name *</label><input class="fi" id="p-name" type="text" placeholder="e.g. Rice" oninput="autoProductImage()"></div>
+ <div class="fg" style="margin:0"><label class="fl">Category *</label>
+ <select class="fi" id="p-cat" onchange="onCatChange()">
+ <option value="">Select category</option>
+ <option>Grocery</option><option>Fruits &amp; Vegetables</option><option>Dairy &amp; Eggs</option><option>Bakery</option><option>Restaurants</option><option>Meat &amp; Seafood</option><option>Snacks &amp; Beverages</option><option>Home Essentials</option><option>Personal Care</option><option>Baby Care</option><option>Stationery</option><option>Flowers &amp; Gifts</option><option>Electronics Accessories</option>
+ </select>
+ </div>
+ </div>
+
+ <div class="fg" style="margin-bottom:13px"><label class="fl">Subcategory *</label><select class="fi" id="p-subcat" onchange="autoProductImage()"><option value="">Select a category first</option></select></div>
+
+ <!-- Category info strips -->
+ <div class="cat-info-strip cis-fashion" id="cis-fashion">Fashion selected. Pick available sizes below.</div>
+ <div class="cat-info-strip cis-kids" id="cis-kids">Kids selected. Pick sizes and age groups below.</div>
+ <div class="cat-info-strip cis-meat" id="cis-meat">Meat selected. Enter price per kg; all weights are auto-calculated.</div>
+
+ <!-- FASHION SIZES -->
+ <div id="fashion-fields" style="display:none;margin-bottom:16px">
+ <div class="size-picker-wrap">
+ <div class="size-picker-label">Available Sizes * <span style="font-weight:400;color:var(--mid)">(select all that apply)</span></div>
+ <div class="size-options">
+ <button type="button" class="size-btn" data-grp="fashion" data-val="S" onclick="toggleSz(this)">S</button>
+ <button type="button" class="size-btn" data-grp="fashion" data-val="M" onclick="toggleSz(this)">M</button>
+ <button type="button" class="size-btn" data-grp="fashion" data-val="L" onclick="toggleSz(this)">L</button>
+ <button type="button" class="size-btn" data-grp="fashion" data-val="XL" onclick="toggleSz(this)">XL</button>
+ <button type="button" class="size-btn" data-grp="fashion" data-val="XXL" onclick="toggleSz(this)">XXL</button>
+ <button type="button" class="size-btn" data-grp="fashion" data-val="3XL" onclick="toggleSz(this)">3XL</button>
+ </div>
+ </div>
+ </div>
+
+ <!-- KIDS SIZES + AGE -->
+ <div id="kids-fields" style="display:none;margin-bottom:16px">
+ <div class="size-picker-wrap">
+ <div class="size-picker-label">Available Sizes <span style="font-weight:400;color:var(--mid)">(optional)</span></div>
+ <div class="size-options">
+ <button type="button" class="size-btn" data-grp="kids" data-val="XS" onclick="toggleSz(this)">XS</button>
+ <button type="button" class="size-btn" data-grp="kids" data-val="S" onclick="toggleSz(this)">S</button>
+ <button type="button" class="size-btn" data-grp="kids" data-val="M" onclick="toggleSz(this)">M</button>
+ <button type="button" class="size-btn" data-grp="kids" data-val="L" onclick="toggleSz(this)">L</button>
+ <button type="button" class="size-btn" data-grp="kids" data-val="XL" onclick="toggleSz(this)">XL</button>
+ </div>
+ </div>
+ <div class="size-picker-wrap" style="margin-top:12px">
+ <div class="size-picker-label">Age Groups <span style="font-weight:400;color:var(--mid)">(select all that apply)</span></div>
+ <div class="age-options">
+ <button type="button" class="age-btn" data-val="0-1 yr" onclick="toggleAge(this)">0-1 yr</button>
+ <button type="button" class="age-btn" data-val="1-3 yrs" onclick="toggleAge(this)">1-3 yrs</button>
+ <button type="button" class="age-btn" data-val="3-5 yrs" onclick="toggleAge(this)">3-5 yrs</button>
+ <button type="button" class="age-btn" data-val="5-8 yrs" onclick="toggleAge(this)">5-8 yrs</button>
+ <button type="button" class="age-btn" data-val="8-12 yrs" onclick="toggleAge(this)">8-12 yrs</button>
+ <button type="button" class="age-btn" data-val="12+ yrs" onclick="toggleAge(this)">12+ yrs</button>
+ </div>
+ </div>
+ </div>
+
+ <!-- MEAT PRICING -->
+ <div id="meat-fields" style="display:none;margin-bottom:16px">
+ <div class="meat-pricing-card">
+ <div class="meat-pricing-title">Meat Pricing Calculator</div>
+ <div class="fg" style="margin-bottom:4px">
+ <label class="fl" style="color:var(--orange-d)">Price per 1 kg (Rs.) *</label>
+ <input class="fi" id="p-price-per-kg" type="number" min="0" step="0.5" placeholder="e.g. 350" oninput="calcMeatPrices()">
+ </div>
+ <div class="meat-price-grid" id="meat-price-grid">
+ <div style="color:var(--mid);font-size:.78rem;grid-column:1/-1;padding:4px 0">Enter price per kg above to see auto-calculated costs.</div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Price + Stock row -->
+ <div class="form-row" style="margin-bottom:13px">
+ <div class="fg" style="margin:0" id="price-wrap">
+ <label class="fl">Price (Rs.) *</label>
+ <input class="fi" id="p-price" type="number" min="0" placeholder="49">
+ </div>
+ <div class="fg" style="margin:0">
+ <label class="fl" id="stock-label">Stock Quantity *</label>
+ <input class="fi" id="p-stock" type="number" min="0" placeholder="100">
+ </div>
+ </div>
+ <div class="fg" style="margin-bottom:6px"><label class="fl">Product Description (optional)</label><input class="fi" id="p-desc" type="text" placeholder="Short product description"></div>
+
+ <!-- Automatic Product Image -->
+ <div class="fg" style="margin-bottom:18px">
+ <label class="fl">Automatic Product Image</label>
+ <div class="img-preview-box" id="auto-img-wrap" style="display:none"><img id="auto-img-preview" src="" alt="Automatically selected product image"></div>
+ <div class="img-ph-empty" id="auto-img-empty" style="display:flex"><span>Enter a product name to automatically select its image</span></div>
+ <div style="margin-top:7px;font-size:.7rem;color:var(--mid)">Nexcart chooses a matching catalogue image from the product name and category.</div>
+ </div>
+
+ <div style="display:flex;gap:11px;align-items:center;flex-wrap:wrap">
+ <button class="btn-orange" onclick="addProduct()">Add Product</button>
+ <button class="btn-sec" onclick="clearProdForm()">Clear</button>
+ <div class="smsg ok" id="prod-ok"></div><div class="smsg err" id="prod-err"></div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Orders -->
+<div class="panel" id="panel-orders">
+ <div class="ph"><div class="ph-title">Customer Orders</div><div class="ph-sub">Manage orders and assign delivery partners for fulfillment.</div></div>
+ <div class="setup-gate" id="setup-gate-orders">
+ <div class="setup-gate-ic">SET</div>
+ <div><div class="setup-gate-title">Orders unlock after seller setup</div><div class="setup-gate-text" id="setup-gate-orders-text">Complete shop setup and certificates before receiving or managing orders.</div><div class="setup-gate-actions"><button class="btn-blue" onclick="goPanel('shop')">Shop Setup</button><button class="btn-sec" onclick="goPanel('documents')">Documents</button></div></div>
+ </div>
+ <div class="dl-btns"><button class="btn-dl pdf" onclick="downloadPDF()">Export PDF Report</button></div>
+ <div class="filter-row">
+ <select class="filter-sel" id="order-filter-status" onchange="renderOrdersPanel()">
+ <option value="">All Status</option><option value="Confirmed">Confirmed</option><option value="Packed">Packed</option>
+ <option value="Ready for Pickup">Ready for Pickup</option><option value="Picked Up">Picked Up</option>
+ <option value="Out for Delivery">Out for Delivery</option><option value="Delivered">Delivered</option><option value="Cancelled">Cancelled</option>
+ </select>
+ <select class="filter-sel" id="order-filter-sort" onchange="renderOrdersPanel()">
+ <option value="desc">Newest First</option><option value="asc">Oldest First</option>
+ </select>
+ <select class="filter-sel" id="order-filter-pay" onchange="renderOrdersPanel()">
+ <option value="">All Payment Types</option><option value="cod">Cash on Delivery</option><option value="online">Online Payment</option>
+ </select>
+ <span class="orders-count" id="orders-count-lbl">0 orders</span>
+ </div>
+ <div id="orders-container"></div>
+ </div>
+
+ <!-- Delivery Partners -->
+ <div class="panel" id="panel-partners">
+ <div class="ph"><div class="ph-title">Delivery Partners</div><div class="ph-sub">All delivery partners on Nexcart.</div></div>
+ <div class="stat-row" style="grid-template-columns:repeat(3,1fr)">
+ <div class="stat-card"><div class="sc-ic-wrap">ON</div><div class="sc-v" id="dp-online-count">0</div><div class="sc-l">Online Now</div></div>
+ <div class="stat-card"><div class="sc-ic-wrap">DP</div><div class="sc-v" id="dp-total-count">0</div><div class="sc-l">Total Partners</div></div>
+ <div class="stat-card"><div class="sc-ic-wrap">OD</div><div class="sc-v" id="dp-active-count">0</div><div class="sc-l">On Delivery</div></div>
+ </div>
+ <div class="card">
+ <div class="card-title"><div class="card-title-ic">DP</div>All Delivery Partners</div>
+ <div id="partners-grid" class="dp-grid"></div>
+ </div>
+ </div>
+
+ <!-- Revenue -->
+<div class="panel" id="panel-revenue">
+ <div class="ph"><div class="ph-title">Revenue</div><div class="ph-sub">Your earnings from Nexcart orders.</div></div>
+ <div class="setup-gate" id="setup-gate-revenue">
+ <div class="setup-gate-ic">SET</div>
+ <div><div class="setup-gate-title">Revenue unlocks after seller setup</div><div class="setup-gate-text" id="setup-gate-revenue-text">Complete shop setup and certificates first.</div><div class="setup-gate-actions"><button class="btn-blue" onclick="goPanel('shop')">Shop Setup</button><button class="btn-sec" onclick="goPanel('documents')">Documents</button></div></div>
+ </div>
+ <div class="rev-grid">
+ <div class="rev-card"><div class="rev-ic">TR</div><div class="rev-v" id="rv-total">0</div><div class="rev-l">Total Revenue</div></div>
+ <div class="rev-card"><div class="rev-ic">OR</div><div class="rev-v" id="rv-orders">0</div><div class="rev-l">Total Orders</div></div>
+ <div class="rev-card"><div class="rev-ic">COD</div><div class="rev-v" id="rv-cod">0</div><div class="rev-l">COD Pending</div></div>
+ <div class="rev-card"><div class="rev-ic">AVG</div><div class="rev-v" id="rv-avg">0</div><div class="rev-l">Avg Order Value</div></div>
+ </div>
+ <div class="card"><div class="card-title"><div class="card-title-ic">PAY</div>Payment Breakdown</div><div id="rev-pay-breakdown" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:4px"></div></div>
+ <div class="card"><div class="card-title"><div class="card-title-ic">PR</div>Revenue by Product</div><div id="rev-by-product" style="display:flex;flex-direction:column;gap:10px;margin-top:6px"></div></div>
+ <div class="card"><div class="card-title"><div class="card-title-ic">7D</div>Last 7 Days</div><div class="chart-bar-wrap" id="rev-chart"></div></div>
+ </div>
+
+ </div><!-- /panels -->
+ </div><!-- /dash-layout -->
+</div><!-- /screen-dash -->
+
+<!-- Restock Modal -->
+<div class="modal-overlay" id="restock-modal">
+ <div class="modal-box">
+ <div class="modal-title">Restock Product</div>
+ <div class="modal-sub" id="restock-modal-sub">Update stock quantity.</div>
+ <div class="fg" style="margin-bottom:0"><label class="fl">New Stock Quantity</label><input class="fi" id="restock-qty" type="number" min="0" placeholder="e.g. 50"></div>
+ <div class="modal-actions">
+ <button class="btn-blue" onclick="confirmRestock()" style="flex:1">Update Stock</button>
+ <button class="btn-sec" onclick="closeRestockModal()">Cancel</button>
+ </div>
+ </div>
+</div>
+
+<!-- Assign Partner Modal -->
+<div class="modal-overlay" id="assign-modal">
+ <div class="modal-box">
+ <div class="modal-title">Assign Delivery Partner</div>
+ <div class="modal-sub" id="assign-modal-sub">Select an online partner near your shop.</div>
+ <div id="assign-modal-partners"><div style="text-align:center;padding:24px"><div style="width:28px;height:28px;border:3px solid rgba(214,168,58,.24);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px"></div><div style="font-size:.82rem;color:var(--mid)">Loading nearby partners</div></div></div>
+ <div class="modal-actions" style="margin-top:10px"><button class="btn-sec" onclick="closeAssignModal()" style="width:100%">Cancel</button></div>
+ </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>const fbConfig={apiKey:"AIzaSyCxNdOs69QAD-1FTIDVyf0N0N2YGqWNgOo",authDomain:"nexcart-db-7a02f.firebaseapp.com",projectId:"nexcart-db-7a02f",storageBucket:"nexcart-db-7a02f.firebasestorage.app",messagingSenderId:"868851396316",appId:"1:868851396316:web:951e1988f3f2e4b065ce19",measurementId:"G-NPMLZ054G8"};
+firebase.initializeApp(fbConfig);
+const db=firebase.firestore(),storage=firebase.storage();
+const shopsCol=()=>db.collection('shops'),productsCol=()=>db.collection('products');
+const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)),del:k=>localStorage.removeItem(k)};
+const getVendors=()=>LS.get('lsv_vendors')||{};
+const now=()=>new Date().toISOString();
+const uid=()=>'_v'+Math.random().toString(36).slice(2)+Date.now();
+function haversineKm(la1,ln1,la2,ln2){const R=6371,dLat=(la2-la1)*Math.PI/180,dLng=(ln2-ln1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+const distLabel=km=>km<1?(km*1000).toFixed(0)+' m away':km.toFixed(1)+' km away';
+
+let cu=null,vs=null,map=null,mkr=null,slat=null,slng=null;
+let prodUnsub=null,partnerUnsub=null,_orders=[],_products=[],_partners=[];
+let _restockId=null,_uploadedDocs={},_assignOrderId=null;
+let _imgUrl='',_imgTab='upload';
+// dynamic field state
+let _fashionSizes=new Set(),_kidsSizes=new Set(),_kidsAges=new Set();
+
+// UI helpers 
+const toast=(m,t='ok')=>{const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.className='toast',3500);};
+const smsg=(id,m,t='ok')=>{const e=document.getElementById(id);if(!e)return;e.textContent=m;e.className='smsg show '+t;setTimeout(()=>e.className='smsg',4500);};
+const setFbStatus=s=>{const e=document.getElementById('fb-indicator');if(!e)return;const mp={ok:['Connected','ok'],err:['Offline','err'],loading:['Connecting','loading']};const[txt,cls]=mp[s]||mp.loading;e.textContent=txt;e.className='fb-status '+cls;};
+const showScreen=s=>{document.getElementById('screen-auth').className=s==='auth'?'active':'';document.getElementById('screen-dash').className=s==='dash'?'active':'';};
+function shopDetailsReady(){return !!(vs&&vs.name&&vs.category&&vs.address);}
+function sellerReady(){return shopDetailsReady()&&getDocCompleteness()==='verified';}
+function setupMessage(){if(!shopDetailsReady())return 'Save shop name, category, and full address first.';if(getDocCompleteness()!=='verified')return 'Upload GST Certificate and Shop Registration Certificate, then save documents.';return 'Seller setup complete. Products and orders are unlocked.';}
+function refreshSetupGate(){
+ const ready=sellerReady(),msg=setupMessage();
+ ['overview','products','add','orders','revenue'].forEach(n=>{const gate=document.getElementById('setup-gate-'+n),txt=document.getElementById('setup-gate-'+n+'-text');if(gate)gate.classList.toggle('show',!ready);if(txt)txt.textContent=msg;});
+ ['products','add','orders','revenue'].forEach(n=>{const p=document.getElementById('panel-'+n);if(p)p.classList.toggle('setup-locked',!ready);});
+ document.querySelectorAll('.sb-item').forEach((btn,i)=>btn.classList.toggle('locked',!ready&&[3,4,5,7].includes(i)));
+}
+function requireSellerReady(messageTarget){
+ if(sellerReady())return true;
+ const msg=setupMessage();
+ if(messageTarget)smsg(messageTarget,msg,'err');else toast(msg,'err');
+ refreshSetupGate();
+ return false;
+}
+
+const FINAL_SUBCATEGORIES={
+ 'Grocery':['Rice','Oil','Flour','Sugar','Spices','Pulses'],'Fruits & Vegetables':['Fresh fruits','Fresh vegetables'],'Dairy & Eggs':['Milk','Curd','Butter','Paneer','Eggs'],'Bakery':['Bread','Cakes','Cookies','Pastries'],'Restaurants':['Meals','Biryani','Pizza','Burgers','Dosa','Fried Rice'],'Meat & Seafood':['Chicken','Mutton','Fish','Prawns'],'Snacks & Beverages':['Chips','Chocolates','Soft drinks','Juices','Water'],'Home Essentials':['Cleaning products','Detergents','Kitchen essentials','Garbage bags'],'Personal Care':['Soap','Shampoo','Toothpaste','Toothbrush','Face wash','Hair oil'],'Baby Care':['Diapers','Baby wipes','Baby lotion','Baby powder','Baby shampoo','Baby soap','Feeding bottles','Baby food','Baby cereal'],'Stationery':['Pens','Notebooks','School supplies','Printer paper'],'Flowers & Gifts':['Bouquets','Greeting cards','Gift boxes','Chocolates'],'Electronics Accessories':['Chargers','USB cables','Earphones','Phone cases','Power banks']
+};
+// Category change show/hide dynamic fields 
+window.onCatChange=()=>{
+ const cat=document.getElementById('p-cat').value;
+ const sub=document.getElementById('p-subcat'),items=FINAL_SUBCATEGORIES[cat]||[];
+ sub.innerHTML='<option value="">'+(items.length?'Select subcategory':'Select a category first')+'</option>'+items.map(x=>'<option>'+x+'</option>').join('');
+ const isFashion=cat==='Fashion & Clothing',isKids=cat==='Kids & Toys',isMeat=cat==='Meat & Seafood';
+ // strips
+ ['cis-fashion','cis-kids','cis-meat'].forEach(id=>document.getElementById(id).classList.remove('show'));
+ if(isFashion)document.getElementById('cis-fashion').classList.add('show');
+ if(isKids)document.getElementById('cis-kids').classList.add('show');
+ if(isMeat)document.getElementById('cis-meat').classList.add('show');
+ // field sections
+ document.getElementById('fashion-fields').style.display=isFashion?'block':'none';
+ document.getElementById('kids-fields').style.display=isKids?'block':'none';
+ document.getElementById('meat-fields').style.display=isMeat?'block':'none';
+ // price field
+ document.getElementById('price-wrap').style.display=isMeat?'none':'';
+ // stock label update for meat
+ document.getElementById('stock-label').textContent=isMeat?'Stock (kg available) *':'Stock Quantity *';
+ document.getElementById('p-stock').placeholder=isMeat?'e.g. 20':'100';
+ // reset
+ _fashionSizes.clear();_kidsSizes.clear();_kidsAges.clear();
+ document.querySelectorAll('.size-btn,.age-btn').forEach(b=>b.classList.remove('sel'));
+ if(isMeat){document.getElementById('p-price-per-kg').value='';document.getElementById('p-price').value='';calcMeatPrices();}
+ autoProductImage();
+};
+
+// Size / Age toggles 
+window.toggleSz=btn=>{
+ const grp=btn.dataset.grp,val=btn.dataset.val;
+ const set=grp==='fashion'?_fashionSizes:_kidsSizes;
+ if(set.has(val)){set.delete(val);btn.classList.remove('sel');}
+ else{set.add(val);btn.classList.add('sel');}
+};
+window.toggleAge=btn=>{
+ const val=btn.dataset.val;
+ if(_kidsAges.has(val)){_kidsAges.delete(val);btn.classList.remove('sel');}
+ else{_kidsAges.add(val);btn.classList.add('sel');}
+};
+
+// Meat price calculator 
+window.calcMeatPrices=()=>{
+ const ppk=parseFloat(document.getElementById('p-price-per-kg').value)||0;
+ document.getElementById('p-price').value=ppk||'';
+ const grid=document.getElementById('meat-price-grid');
+ if(!ppk){grid.innerHTML='<div style="color:var(--mid);font-size:.78rem;grid-column:1/-1;padding:4px 0">Enter price per kg above to see auto-calculated costs.</div>';return;}
+ const weights=[0.5,1,1.5,2,2.5,3,4,5];
+ grid.innerHTML=weights.map(w=>`<div class="meat-price-row"><div class="meat-price-kg">${w} kg</div><div class="meat-price-val">${Math.round(ppk*w).toLocaleString('en-IN')}</div></div>`).join('');
+};
+
+// Auth 
+let authMode='login';
+window.switchAuth=m=>{
+ authMode=m;
+ document.querySelectorAll('.atab').forEach((t,i)=>t.classList.toggle('active',['login','register'][i]===m));
+ document.getElementById('ng').style.display=m==='register'?'flex':'none';
+ document.getElementById('a-btn').textContent=m==='login'?'Login':'Create Account';
+ ['a-err','a-ok'].forEach(id=>{const e=document.getElementById(id);e.className='amsg';});
+};
+window.handleAuth=()=>{
+ const email=document.getElementById('a-email').value.trim().toLowerCase();
+ const pass=document.getElementById('a-pass').value,name=document.getElementById('a-name').value.trim();
+ const err=document.getElementById('a-err');
+ if(!email||!pass){err.textContent='Please fill in all fields.';err.className='amsg err show';return;}
+ const vendors=getVendors();
+ if(authMode==='register'){
+ if(!name){err.textContent='Please enter your name.';err.className='amsg err show';return;}
+ if(pass.length<6){err.textContent='Password must be at least 6 characters.';err.className='amsg err show';return;}
+ if(vendors[email]){err.textContent='Email already registered.';err.className='amsg err show';return;}
+ const id=uid();vendors[email]={id,name,email,pass,createdAt:now()};LS.set('lsv_vendors',vendors);loginUser({id,name,email});
+ }else{
+ const v=vendors[email];
+ if(!v){err.textContent='No account found.';err.className='amsg err show';return;}
+ if(v.pass!==pass){err.textContent='Incorrect password.';err.className='amsg err show';return;}
+ loginUser({id:v.id,name:v.name,email:v.email});
+ }
+};
+function loginUser(user){
+ cu=user;LS.set('lsv_session',user);
+ document.getElementById('vc-av').textContent=user.name[0].toUpperCase();
+ document.getElementById('vc-name').textContent=user.name;
+ document.getElementById('ov-sub').textContent='Hello '+user.name+'! Here is your live dashboard.';
+ showScreen('dash');goPanel('overview');
+ loadShopFromFirebase();setTimeout(initMap,250);setTimeout(loadOrders,1500);subscribeToPartners();
+ refreshSetupGate();
+}
+window.doLogout=()=>{
+ LS.del('lsv_session');if(prodUnsub)prodUnsub();if(partnerUnsub)partnerUnsub();
+ cu=null;vs=null;map=null;mkr=null;slat=null;slng=null;_orders=[];_products=[];_partners=[];_uploadedDocs={};_imgUrl='';
+ document.getElementById('a-email').value='';document.getElementById('a-pass').value='';
+ showScreen('auth');toast('Signed out','info');
+};
+window.addEventListener('load',()=>{const s=LS.get('lsv_session');if(s&&s.id)loginUser(s);else showScreen('auth');});
+
+// Map 
+function mkIcon(){return L.divIcon({className:'',html:'<div style="width:18px;height:18px;background:var(--orange);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 12px rgba(214,168,58,.72)"></div>',iconSize:[18,18],iconAnchor:[9,9]});}
+function initMap(){
+ if(map)return;const el=document.getElementById('shop-map');if(!el)return;
+ map=L.map('shop-map').setView([11.0168,76.9558],13);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OpenStreetMap',maxZoom:19}).addTo(map);
+ map.on('click',e=>{slat=e.latlng.lat;slng=e.latlng.lng;if(mkr)map.removeLayer(mkr);mkr=L.marker([slat,slng],{icon:mkIcon()}).addTo(map).bindPopup('Your shop').openPopup();document.getElementById('map-txt').textContent='Pinned: '+slat.toFixed(5)+', '+slng.toFixed(5);});
+ if(vs&&vs.lat&&vs.lng){slat=vs.lat;slng=vs.lng;map.setView([slat,slng],15);mkr=L.marker([slat,slng],{icon:mkIcon()}).addTo(map).bindPopup('Your shop').openPopup();document.getElementById('map-txt').textContent='Pinned: '+vs.lat.toFixed(5)+', '+vs.lng.toFixed(5);}
+}
+window.detectLoc=()=>{if(!navigator.geolocation){toast('Geolocation not supported','err');return;}navigator.geolocation.getCurrentPosition(p=>{slat=p.coords.latitude;slng=p.coords.longitude;map.flyTo([slat,slng],16);if(mkr)map.removeLayer(mkr);mkr=L.marker([slat,slng],{icon:mkIcon()}).addTo(map).bindPopup('Your shop').openPopup();document.getElementById('map-txt').textContent='Auto-detected: '+slat.toFixed(5)+', '+slng.toFixed(5);toast('Location detected!');},()=>toast('Location permission denied','err'));};
+
+// Shop 
+function loadShopFromFirebase(){if(!cu)return;setFbStatus('loading');shopsCol().doc(cu.id).get().then(doc=>{setFbStatus('ok');if(doc.exists){vs={id:doc.id,...doc.data()};fillShopForm(vs);updateSummary(vs);if(vs.docs)loadDocState(vs.docs);subscribeToProducts();}else subscribeToProducts();refreshSetupGate();}).catch(()=>setFbStatus('err'));}
+function fillShopForm(d){document.getElementById('s-name').value=d.name||'';document.getElementById('s-cat').value=d.category||'';document.getElementById('s-addr').value=d.address||'';document.getElementById('s-phone').value=d.phone||'';document.getElementById('s-hours').value=d.hours||'';document.getElementById('s-desc').value=d.desc||'';if(d.lat&&d.lng){slat=d.lat;slng=d.lng;document.getElementById('map-txt').textContent='Pinned: '+d.lat.toFixed(5)+', '+d.lng.toFixed(5);}}
+const infoRow=(k,v)=>'<div class="info-row2"><div class="ik">'+k+'</div><div class="iv">'+(v||'')+'</div></div>';
+function updateSummary(d){if(!d||!d.name)return;document.getElementById('st-st').innerHTML='<span class="live-badge"><span class="live-d"></span>Live</span>';document.getElementById('shop-summary').innerHTML='<div class="info-grid">'+infoRow('Shop Name',d.name)+infoRow('Category',d.category)+infoRow('Address',d.address)+infoRow('Phone',d.phone)+infoRow('Hours',d.hours)+infoRow('Location',d.lat?d.lat.toFixed(4)+', '+d.lng.toFixed(4):null)+'</div>';}
+window.saveShop=()=>{
+ const name=document.getElementById('s-name').value.trim(),cat=document.getElementById('s-cat').value,addr=document.getElementById('s-addr').value.trim();
+ if(!name||!cat||!addr){smsg('shop-err','Name, category and address required.','err');return;}
+ const data={name,category:cat,address:addr,phone:document.getElementById('s-phone').value.trim(),hours:document.getElementById('s-hours').value.trim(),desc:document.getElementById('s-desc').value.trim(),lat:slat||0,lng:slng||0,vendorId:cu.id,vendorName:cu.name,vendorEmail:cu.email,rating:4.5,sellerVerified:getDocCompleteness()==='verified',updatedAt:now(),createdAt:(vs&&vs.createdAt)||now(),docs:vs?.docs||{}};
+ smsg('shop-ok','Saving');
+ shopsCol().doc(cu.id).set(data).then(()=>{vs={id:cu.id,...data};updateSummary(vs);refreshSetupGate();smsg('shop-ok','Shop saved. Upload documents to unlock selling.');toast('Shop saved');}).catch(e=>smsg('shop-err',' '+e.message,'err'));
+};
+
+// Documents 
+const DOC_KEYS=['gst-cert','shop-cert'];
+window.triggerUpload=id=>document.getElementById(id)?.click();
+window.handleDocUpload=(docKey,fileInputId,boxId)=>{const file=document.getElementById(fileInputId)?.files[0];if(!file)return;if(file.size>5*1024*1024){toast('File too large max 5 MB','err');return;}const reader=new FileReader();reader.onload=e=>{_uploadedDocs[docKey]={name:file.name,type:file.type,data:e.target.result,size:file.size};document.getElementById(docKey+'-uploaded').style.display='flex';document.getElementById(docKey+'-name').textContent=file.name;document.getElementById(boxId).style.display='none';updateDocVerifyStrip();refreshSetupGate();};reader.readAsDataURL(file);};
+window.removeDoc=docKey=>{delete _uploadedDocs[docKey];document.getElementById(docKey+'-uploaded').style.display='none';document.getElementById(docKey+'-box').style.display='block';updateDocVerifyStrip();refreshSetupGate();};
+function loadDocState(docs){if(!docs)return;DOC_KEYS.forEach(k=>{if(docs[k]){_uploadedDocs[k]=docs[k];document.getElementById(k+'-uploaded').style.display='flex';document.getElementById(k+'-name').textContent=docs[k].name;document.getElementById(k+'-box').style.display='none';}});[['d-gst-num','_gst-num'],['d-gst-date','_gst-date'],['d-shop-reg-num','_shop-reg-num'],['d-shop-reg-expiry','_shop-reg-expiry']].forEach(([elId,key])=>{const el=document.getElementById(elId);if(el&&docs[key])el.value=docs[key];});updateDocVerifyStrip();renderDocOverviewSummary();refreshSetupGate();}
+function getDocCompleteness(){const hasGST=!!_uploadedDocs['gst-cert']&&document.getElementById('d-gst-num')?.value?.trim().length===15;const hasShop=!!_uploadedDocs['shop-cert']&&document.getElementById('d-shop-reg-num')?.value?.trim();if(hasGST&&hasShop)return 'verified';if(_uploadedDocs['gst-cert']||_uploadedDocs['shop-cert'])return 'pending';return 'incomplete';}
+function updateDocVerifyStrip(){const status=getDocCompleteness();const wrap=document.getElementById('doc-verify-strip-wrap');if(!wrap)return;const cfgs={verified:{cls:'verified',icon:'OK',text:'Documents Verified',sub:'Your shop is verified on Nexcart.'},pending:{cls:'pending',icon:'PEN',text:'Documents Pending',sub:'Upload GST + Shop Certificate to get verified.'},incomplete:{cls:'incomplete',icon:'REQ',text:'Documents Incomplete',sub:'Please upload at least GST & Shop Registration.'}};const c=cfgs[status];wrap.innerHTML='<div class="doc-verify-strip '+c.cls+'"><div class="dvs-ic">'+c.icon+'</div><div><div class="dvs-text '+c.cls+'">'+c.text+'</div><div class="dvs-sub">'+c.sub+'</div></div></div>';renderDocOverviewSummary();refreshSetupGate();}
+function renderDocOverviewSummary(){const el=document.getElementById('doc-summary-overview');if(!el)return;const docs=[{label:'GST Certificate',key:'gst-cert',numId:'d-gst-num',req:true},{label:'Shop Registration',key:'shop-cert',numId:'d-shop-reg-num',req:true}];el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+docs.map(d=>{const uploaded=!!_uploadedDocs[d.key];const numVal=document.getElementById(d.numId)?.value?.trim();const ok=uploaded&&numVal;return '<div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:10px;background:'+(ok?'var(--success-p)':d.req?'var(--error-p)':'var(--off)')+';border:1px solid '+(ok?'var(--success-b)':d.req?'var(--error-b)':'var(--border)')+'"><span style="font-size:1rem">'+(ok?'':d.req?'':'')+'</span><div><div style="font-size:.8rem;font-weight:700;color:'+(ok?'var(--success)':d.req?'var(--error)':'var(--mid)')+'">'+d.label+'</div><div style="font-size:.68rem;color:var(--mid)">'+(ok?'Uploaded':'Not uploaded')+'</div></div></div>';}).join('')+'</div>';}
+window.saveDocs=()=>{const gstNum=document.getElementById('d-gst-num').value.trim(),shopReg=document.getElementById('d-shop-reg-num').value.trim();if(!vs){smsg('doc-err','Save shop details first.','err');return;}if(!gstNum||gstNum.length!==15){smsg('doc-err','GST Number must be exactly 15 characters.','err');return;}if(!shopReg){smsg('doc-err','Shop registration number is required.','err');return;}if(!_uploadedDocs['gst-cert']||!_uploadedDocs['shop-cert']){smsg('doc-err','Upload both GST Certificate and Shop Registration Certificate.','err');return;}const docs={..._uploadedDocs,'_gst-num':gstNum,'_gst-date':document.getElementById('d-gst-date').value,'_shop-reg-num':shopReg,'_shop-reg-expiry':document.getElementById('d-shop-reg-expiry').value,savedAt:now()};smsg('doc-ok','Saving');shopsCol().doc(cu.id).update({docs,sellerVerified:true,verifiedAt:now()}).then(()=>{if(!vs)vs={};vs.docs=docs;vs.sellerVerified=true;updateDocVerifyStrip();refreshSetupGate();smsg('doc-ok','Documents saved. Selling is unlocked.');toast('Seller setup complete');}).catch(e=>smsg('doc-err',' '+e.message,'err'));};
+
+// Automatic product images selected from product name and category
+const AUTO_IMAGE_KEYWORDS={rice:'photo-1586201375761-83865001e31c',oil:'photo-1474979266404-7eaacbcd87c5',flour:'photo-1509440159596-0249088772ff',spice:'photo-1596040033229-a9821ebd058d',milk:'photo-1550583724-b2692b85b150',egg:'photo-1582722872445-44dc5f7e3c8f',bread:'photo-1509440159596-0249088772ff',cake:'photo-1578985545062-69928b1d9587',pizza:'photo-1565299624946-b28f40a0ae38',burger:'photo-1568901346375-23c9450c58cd',chicken:'photo-1604503468506-a8da13d82791',fish:'photo-1510130387422-82bed34b37e9',chips:'photo-1566478989037-eec170784d0b',chocolate:'photo-1575377427642-087cf684f29d',diaper:'photo-1519689680058-324335c77eba',pen:'photo-1583485088034-697b5bc54ccd',flower:'photo-1490750967868-88aa4486c946',earphone:'photo-1505740420928-5e560c06d30e'};
+const AUTO_IMAGE_CATEGORY={'Grocery':'photo-1542838132-92c53300491e','Fruits & Vegetables':'photo-1610348725531-843dff563e2c','Dairy & Eggs':'photo-1628088062854-d1870b4553da','Bakery':'photo-1509440159596-0249088772ff','Restaurants':'photo-1504674900247-0877df9cc836','Meat & Seafood':'photo-1607623814075-e51df1bdc82f','Snacks & Beverages':'photo-1621939514649-280e2aa9454f','Home Essentials':'photo-1583947215259-38e31be8751f','Personal Care':'photo-1556228720-195a672e8a03','Baby Care':'photo-1515488042361-ee00e0ddd4e4','Stationery':'photo-1455390582262-044cdead277a','Flowers & Gifts':'photo-1490750967868-88aa4486c946','Electronics Accessories':'photo-1516321318423-f06f85e504b3'};
+window.autoProductImage=()=>{const name=(document.getElementById('p-name')?.value||'').trim().toLowerCase(),sub=(document.getElementById('p-subcat')?.value||'').toLowerCase(),cat=document.getElementById('p-cat')?.value||'',hay=name+' '+sub,key=Object.keys(AUTO_IMAGE_KEYWORDS).find(k=>hay.includes(k)),photo=key?AUTO_IMAGE_KEYWORDS[key]:AUTO_IMAGE_CATEGORY[cat];_imgUrl=name&&photo?'https://images.unsplash.com/'+photo+'?auto=format&fit=crop&w=900&q=85':'';const wrap=document.getElementById('auto-img-wrap'),empty=document.getElementById('auto-img-empty'),img=document.getElementById('auto-img-preview');if(_imgUrl){img.src=_imgUrl;img.alt=(name||sub||cat)+' product image';wrap.style.display='block';empty.style.display='none';}else{img.removeAttribute('src');wrap.style.display='none';empty.style.display='flex';}};
+
+// Products 
+function subscribeToProducts(){if(!cu)return;if(prodUnsub)prodUnsub();prodUnsub=productsCol().where('vendorId','==',cu.id).onSnapshot(snap=>{_products=[];snap.forEach(d=>_products.push({id:d.id,...d.data()}));renderProducts(_products);updateStats(_products);renderStockAlerts(_products);},e=>console.error(e));}
+const catEmoji=c=>({'Fashion & Clothing':'','Kids & Toys':'','Electronics':'','Home Appliances':'','Sports & Fitness':'','Meat & Seafood':''}[c]||'');
+function stockColor(s,max){const pct=s/Math.max(max||100,1);if(s===0)return 'var(--error)';if(pct<0.2)return 'var(--warn)';return 'var(--success)';}
+function renderProducts(list){
+ const el=document.getElementById('prod-list');
+ if(!list.length){el.innerHTML='<div class="empty-state"><div class="es-ic">PR</div><div class="es-t">No products yet</div><div class="es-s">Go to Add Product to list your first item.</div></div>';return;}
+ el.innerHTML='<div class="prod-grid">'+list.map(p=>{
+ const s=parseInt(p.stock)||0,pct=Math.min(100,Math.round(s/(p.maxStock||Math.max(s,100))*100)),sc=stockColor(s,p.maxStock||100);
+ const stockLabel=s===0?'<span style="color:var(--error);font-weight:700;font-size:.66rem">OUT OF STOCK</span>':s<=5?'<span style="color:var(--warn);font-size:.66rem">Low: '+s+'</span>':'<span style="color:var(--mid);font-size:.66rem">'+s+' in stock</span>';
+ let tags='';
+ if(p.sizes&&p.sizes.length)tags+='<div class="prod-tags">'+p.sizes.map(sz=>'<span class="prod-tag-size">'+sz+'</span>').join('')+'</div>';
+ if(p.ageGroups&&p.ageGroups.length)tags+='<div class="prod-tags">'+p.ageGroups.map(a=>'<span class="prod-tag-age">'+a+'</span>').join('')+'</div>';
+ if(p.pricePerKg)tags+='<div class="prod-tags"><span class="prod-tag-meat">Rs. '+p.pricePerKg+'/kg</span></div>';
+ const imgHtml=p.image?'<div class="prod-img-wrap"><img class="prod-img" src="'+p.image+'" alt="'+p.name+'" onerror="this.parentElement.innerHTML=\'<div class=\\\'prod-ph\\\'>'+catEmoji(p.category)+'</div>\'"></div>':'<div class="prod-ph">'+catEmoji(p.category)+'</div>';
+ return '<div class="prod-card">'+imgHtml+'<div class="prod-info"><div class="prod-name">'+p.name+'</div><div class="prod-price">Rs. '+p.price+'</div><div class="prod-cat">'+catEmoji(p.category)+' '+p.category+'</div></div>'+tags+'<div class="prod-stock-bar"><div class="prod-stock-fill" style="width:'+pct+'%;background:'+sc+'"></div></div><div class="prod-stock-lbl">'+stockLabel+'</div><div class="prod-actions"><button class="btn-restock" onclick="openRestockModal(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\','+s+')">Restock</button><button class="btn-del" onclick="delProduct(\''+p.id+'\')">Delete</button></div></div>';
+ }).join('')+'</div>';
+}
+function renderStockAlerts(list){const a=[...list.filter(p=>parseInt(p.stock)===0).map(p=>'<div class="stock-alert out"><span></span><div><div class="sa-text out">Out of Stock: '+p.name+'</div><div style="font-size:.7rem;color:var(--mid)">Restock immediately</div></div></div>'),...list.filter(p=>parseInt(p.stock)>0&&parseInt(p.stock)<=5).map(p=>'<div class="stock-alert low"><span></span><div><div class="sa-text low">Low Stock: '+p.name+' ('+p.stock+' left)</div></div></div>')];['stock-alerts-wrap','stock-alerts-prod-wrap'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=a.join('');});}
+function updateStats(list){document.getElementById('st-p').textContent=list.length;document.getElementById('st-s').textContent=list.filter(p=>parseInt(p.stock)>0).length;if(!document.getElementById('st-st').innerHTML.includes('Live'))document.getElementById('st-st').textContent=vs?'Live':'Setup';document.getElementById('st-dp').textContent=_partners.filter(p=>p.isOnline).length;}
+window.delProduct=id=>{if(!confirm('Delete this product?'))return;productsCol().doc(id).delete().then(()=>toast('Product deleted','err')).catch(e=>toast('Delete failed: '+e.message,'err'));};
+window.openRestockModal=(id,name,cur)=>{_restockId=id;document.getElementById('restock-modal-sub').textContent='"'+name+'" Current stock: '+cur;document.getElementById('restock-qty').value='';document.getElementById('restock-modal').classList.add('show');};
+window.closeRestockModal=()=>{document.getElementById('restock-modal').classList.remove('show');_restockId=null;};
+window.confirmRestock=()=>{const qty=parseInt(document.getElementById('restock-qty').value);if(isNaN(qty)||qty<0){toast('Enter a valid quantity','err');return;}if(!_restockId)return;productsCol().doc(_restockId).update({stock:qty,maxStock:Math.max(qty,100)}).then(()=>{toast('Stock updated to '+qty);closeRestockModal();}).catch(e=>toast('Update failed: '+e.message,'err'));};
+
+window.addProduct=()=>{
+ if(!requireSellerReady('prod-err'))return;
+ const name=document.getElementById('p-name').value.trim(),cat=document.getElementById('p-cat').value,subcategory=document.getElementById('p-subcat').value,stock=document.getElementById('p-stock').value,desc=document.getElementById('p-desc').value.trim();
+ const isMeat=cat==='Meat & Seafood',isFashion=cat==='Fashion & Clothing',isKids=cat==='Kids & Toys';
+ if(!name||!cat||!subcategory||!stock){smsg('prod-err','Name, category, subcategory and stock required.','err');return;}
+ let price,pricePerKg;
+ if(isMeat){pricePerKg=parseFloat(document.getElementById('p-price-per-kg').value);if(!pricePerKg||pricePerKg<=0){smsg('prod-err','Enter price per kg for meat.','err');return;}price=pricePerKg;}
+ else{price=parseFloat(document.getElementById('p-price').value);if(!price||price<=0){smsg('prod-err','Enter a valid price.','err');return;}}
+ let sizes=[],ageGroups=[];
+ if(isFashion){sizes=[..._fashionSizes];if(!sizes.length){smsg('prod-err','Select at least one size for Fashion.','err');return;}}
+ if(isKids){sizes=[..._kidsSizes];ageGroups=[..._kidsAges];}
+ const qty=parseInt(stock);
+ smsg('prod-ok','Adding product');
+ const data={name,price,category:cat,subcategory,stock:qty,maxStock:Math.max(qty,100),image:_imgUrl,desc,shopName:vs.name,shopId:cu.id,shopLat:vs.lat,shopLng:vs.lng,vendorId:cu.id,vendorName:cu.name,vendorEmail:cu.email,sellerVerified:true,rating:4.5,createdAt:now()};
+ if(isMeat)data.pricePerKg=pricePerKg;
+ if(sizes.length)data.sizes=sizes;
+ if(ageGroups.length)data.ageGroups=ageGroups;
+ productsCol().add(data).then(()=>{smsg('prod-ok','Product added and live!');toast('Product live!');clearProdForm();goPanel('products');}).catch(e=>smsg('prod-err',e.message,'err'));
+};
+window.clearProdForm=()=>{
+ ['p-name','p-price','p-price-per-kg','p-stock','p-desc'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+ document.getElementById('p-cat').value='';document.getElementById('p-subcat').innerHTML='<option value="">Select a category first</option>';_fashionSizes.clear();_kidsSizes.clear();_kidsAges.clear();
+ document.querySelectorAll('.size-btn,.age-btn').forEach(b=>b.classList.remove('sel'));
+ ['fashion-fields','kids-fields','meat-fields'].forEach(id=>document.getElementById(id).style.display='none');
+ ['cis-fashion','cis-kids','cis-meat'].forEach(id=>document.getElementById(id).classList.remove('show'));
+ document.getElementById('price-wrap').style.display='';document.getElementById('stock-label').textContent='Stock Quantity *';document.getElementById('p-stock').placeholder='100';
+ document.getElementById('meat-price-grid').innerHTML='<div style="color:var(--mid);font-size:.78rem;grid-column:1/-1;padding:4px 0">Enter price per kg above to see auto-calculated costs.</div>';
+ _imgUrl='';const ai=document.getElementById('auto-img-preview');if(ai)ai.removeAttribute('src');const aw=document.getElementById('auto-img-wrap'),ae=document.getElementById('auto-img-empty');if(aw)aw.style.display='none';if(ae)ae.style.display='flex';
+};
+
+// Partners 
+function subscribeToPartners(){if(partnerUnsub)partnerUnsub();partnerUnsub=db.collection('delivery_partners').onSnapshot(snap=>{_partners=[];snap.forEach(d=>_partners.push({id:d.id,...d.data()}));renderPartnersPanel();updateStats(_products);},e=>console.error(e));}
+function renderPartnersPanel(){const online=_partners.filter(p=>p.isOnline),busy=_partners.filter(p=>p.activeOrderId);document.getElementById('dp-online-count').textContent=online.length;document.getElementById('dp-total-count').textContent=_partners.length;document.getElementById('dp-active-count').textContent=busy.length;const grid=document.getElementById('partners-grid');if(!_partners.length){grid.innerHTML='<div class="empty-state"><div class="es-ic">PR</div><div class="es-t">No partners yet</div><div class="es-s">Partners register via the Delivery Partner app.</div></div>';return;}const sorted=[..._partners].sort((a,b)=>(b.isOnline?1:0)-(a.isOnline?1:0));grid.innerHTML=sorted.map(p=>{const veh=p.vehicle==='bicycle'?'Cycle':'Bike';const dist=(vs&&vs.lat&&p.lat)?haversineKm(vs.lat,vs.lng,p.lat,p.lng):null;return`<div class="dp-card ${p.isOnline?'online':''}"><div class="dp-online-dot ${p.isOnline?'online':''}"></div><div class="dp-card-av">${p.photo?`<img src="${p.photo}" alt="">`:((p.firstName||'?')[0].toUpperCase())}</div><div class="dp-card-name">${p.firstName||''} ${p.lastName||''}</div><div class="dp-card-meta">${veh} ${p.vehicle||'Bike'} ${(p.rating||5.0).toFixed(1)}</div>${dist!==null?`<div style="font-size:.68rem;color:var(--mid);margin-top:4px">${distLabel(dist)}</div>`:''} ${p.activeOrderId?'<div style="font-size:.68rem;font-weight:700;color:var(--orange);margin-top:4px">On delivery</div>':p.isOnline?'<div style="font-size:.68rem;font-weight:700;color:var(--success);margin-top:4px">Available</div>':'<div style="font-size:.68rem;color:var(--mid);margin-top:4px">Offline</div>'}<div class="dp-card-stats"><div><div class="dp-stat-v">${p.completedOrders||0}</div><div class="dp-stat-l">Deliveries</div></div><div><div class="dp-stat-v">Rs. ${p.totalEarnings||0}</div><div class="dp-stat-l">Earned</div></div></div></div>`;}).join('');}
+
+// Assign Partner 
+window.openAssignModal=async orderId=>{_assignOrderId=orderId;const order=_orders.find(o=>o.id===orderId);document.getElementById('assign-modal-sub').textContent=order?'Assigning delivery for: '+order.productName:'Select a nearby online partner.';document.getElementById('assign-modal-partners').innerHTML='<div style="text-align:center;padding:24px"><div style="width:28px;height:28px;border:3px solid rgba(214,168,58,.24);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px"></div><div style="font-size:.82rem;color:var(--mid)">Loading nearby partners</div></div>';document.getElementById('assign-modal').classList.add('show');try{const snap=await db.collection('delivery_partners').where('isOnline','==',true).get();const avail=[];snap.forEach(d=>{const p={id:d.id,...d.data()};if(!p.activeOrderId){p.dist=(p.lat&&p.lng)?haversineKm(vs?.lat||11.0168,vs?.lng||76.9558,p.lat,p.lng):999;avail.push(p);}});avail.sort((a,b)=>a.dist-b.dist);if(!avail.length){document.getElementById('assign-modal-partners').innerHTML='<div style="text-align:center;padding:24px;color:var(--mid);font-size:.84rem">No delivery partners online nearby.</div>';return;}document.getElementById('assign-modal-partners').innerHTML=avail.map(p=>{const veh=p.vehicle==='bicycle'?'Cycle':'Bike',far=p.dist>3;return`<div class="partner-row" onclick="assignPartner('${p.id}','${((p.firstName||'')+' '+(p.lastName||'')).trim()}','${p.phone||''}','${p.vehicle||'bike'}')"><div class="partner-av">${p.photo?`<img src="${p.photo}" alt="">`:((p.firstName||'?')[0].toUpperCase())}</div><div class="partner-info"><div class="partner-name">${p.firstName||''} ${p.lastName||''}</div><div class="partner-meta"><span>${veh}</span><span>${(p.rating||5).toFixed(1)}</span><span class="partner-dist-badge ${far?'far':''}">${p.dist<1?(p.dist*1000).toFixed(0)+' m':p.dist.toFixed(1)+' km'}</span></div></div><button class="btn-assign-now">Assign</button></div>`;}).join('');}catch(e){document.getElementById('assign-modal-partners').innerHTML='<div style="color:var(--error);padding:12px">Error: '+e.message+'</div>';}};
+window.assignPartner=async(pid,pname,pphone,pveh)=>{if(!_assignOrderId||!vs)return;try{const vemoji=pveh==='bicycle'?'Cycle':'Bike';await db.collection('orders').doc(_assignOrderId).update({deliveryPartnerId:pid,deliveryPartnerName:pname,deliveryPartnerPhone:pphone,deliveryPartnerVehicle:pveh,deliveryPartnerVehicleEmoji:vemoji,status:'Ready for Pickup',assignedAt:now(),shopLat:vs.lat||0,shopLng:vs.lng||0,shopAddress:vs.address||'',shopPhone:vs.phone||'',shopName:vs.name||''});await db.collection('delivery_partners').doc(pid).update({activeOrderId:_assignOrderId});toast(pname+' assigned!');closeAssignModal();}catch(e){toast('Assignment failed: '+e.message,'err');}};
+window.closeAssignModal=()=>{document.getElementById('assign-modal').classList.remove('show');_assignOrderId=null;};
+
+// Orders 
+const ORDER_STEPS=['Confirmed','Packed','Ready for Pickup','Picked Up','Out for Delivery','Delivered'];
+const STATUS_CLS={'Confirmed':'sp-confirmed','Packed':'sp-packed','Ready for Pickup':'sp-ready','Picked Up':'sp-picked','Out for Delivery':'sp-out','Delivered':'sp-delivered','Cancelled':'sp-cancelled'};
+const STATUS_IC={'Confirmed':'','Packed':'','Ready for Pickup':'','Picked Up':'','Out for Delivery':'','Delivered':'','Cancelled':''};
+function loadOrders(){if(!cu)return;if(!sellerReady()){_orders=[];renderOrdersPanel();renderRevenuePanel();const dot=document.getElementById('new-orders-dot');if(dot)dot.style.display='none';return;}db.collection('orders').where('shopId','==',cu.id).onSnapshot(snap=>{_orders=[];snap.forEach(d=>_orders.push({id:d.id,...d.data()}));_orders.sort((a,b)=>new Date(b.orderedAt)-new Date(a.orderedAt));renderOrdersPanel();renderRevenuePanel();const hasNew=_orders.some(o=>o.status==='Confirmed');const dot=document.getElementById('new-orders-dot');if(dot)dot.style.display=hasNew?'inline-block':'none';},e=>console.error(e));}
+function buildStepper(status){if(status==='Cancelled')return '<div style="display:flex;align-items:center;gap:7px;padding:7px 12px;background:var(--error-p);border:1px solid var(--error-b);border-radius:8px;font-size:.74rem;font-weight:700;color:var(--error)">Order Cancelled</div>';const ci=ORDER_STEPS.indexOf(status);let h='<div class="order-stepper">';ORDER_STEPS.forEach((step,i)=>{const done=i<ci,active=i===ci,lbl=step==='Ready for Pickup'?'Ready':step==='Out for Delivery'?'Out for Del.':step;if(i>0)h+='<div class="os-line'+(done?' done':'')+'"></div>';h+='<div class="os-step"><div class="os-dot'+(done?' done':active?' active':'')+'">'+(done?'OK':i+1)+'</div><div class="os-label'+(done?' done':active?' active':'')+'">'+lbl+'</div></div>';});return h+'</div>';}
+function nextStatus(cur){if(cur==='Packed')return null;const i=ORDER_STEPS.indexOf(cur);if(i===-1||i>=ORDER_STEPS.length-1)return null;return ORDER_STEPS[i+1];}
+function payInfoBlock(o){const isCod=(o.paymentMethod||'cod')==='cod';return`<div class="pay-info-block"><div class="pay-info-label">Payment</div><div><span class="pay-info-method ${isCod?'cod':'online'}">${isCod?'Cash on Delivery':'Online Payment'}</span></div>${isCod?'<div class="pay-info-hint">Collect Rs. '+o.total+' in cash</div>':'<div class="pay-info-hint">Paid online</div>'}</div>`;}
+function codReminder(o){if(o.paymentMethod&&o.paymentMethod!=='cod')return '';if(o.status==='Delivered'||o.status==='Cancelled')return '';return`<div class="cod-reminder">COD: remind partner to collect <strong>Rs. ${o.total}</strong> in cash</div>`;}
+window.advanceOrder=(oid,cur,pid,qty)=>{const next=nextStatus(cur);if(!next){toast('Use Assign Partner for this step','info');return;}const upd={status:next,['statusAt_'+next.replace(/\s+/g,'_')]:now()};if(next==='Delivered'&&pid){productsCol().doc(pid).get().then(doc=>{if(doc.exists){const c=parseInt(doc.data().stock)||0;productsCol().doc(pid).update({stock:Math.max(0,c-qty)});}});}db.collection('orders').doc(oid).update(upd).then(()=>toast('Order '+next+' '+(STATUS_IC[next]||''))).catch(e=>toast('Update failed: '+e.message,'err'));};
+window.confirmShopHandover=async oid=>{try{await db.runTransaction(async tx=>{const ref=db.collection('orders').doc(oid),snap=await tx.get(ref);if(!snap.exists)throw new Error('Order not found');const o=snap.data();if(o.shopHandoverConfirmed)throw new Error('Handover is already confirmed');if(!o.deliveryPartnerId)throw new Error('Assign a delivery partner first');if(!o.riderReachedShop)throw new Error('The delivery partner has not reached the shop');if(o.status!=='Ready for Pickup')throw new Error('This order is not ready for handover');tx.update(ref,{shopHandoverConfirmed:true,shopHandoverAt:now(),pickedUpAt:now(),outForDeliveryAt:now(),status:'Out for Delivery',updatedAt:now()});});toast('Handover confirmed. Delivery is now unlocked.');}catch(e){toast(e.message||'Unable to confirm handover','err');}};
+window.cancelOrder=oid=>{if(!confirm('Cancel this order?'))return;db.collection('orders').doc(oid).update({status:'Cancelled',cancelledAt:now()}).then(()=>toast('Order cancelled','err')).catch(e=>toast('Failed: '+e.message,'err'));};
+function renderOrdersPanel(){const container=document.getElementById('orders-container');if(!sellerReady()){document.getElementById('orders-count-lbl').textContent='Locked';if(container)container.innerHTML='';return;}const sf=document.getElementById('order-filter-status')?.value||'',so=document.getElementById('order-filter-sort')?.value||'desc',pf=document.getElementById('order-filter-pay')?.value||'';let list=_orders.slice();if(sf)list=list.filter(o=>o.status===sf);if(pf)list=list.filter(o=>(o.paymentMethod||'cod')===pf);if(so==='asc')list.reverse();document.getElementById('orders-count-lbl').textContent=list.length+' order'+(list.length!==1?'s':'');if(!list.length){container.innerHTML='<div class="card"><div class="empty-state"><div class="es-ic">PR</div><div class="es-t">No orders found</div><div class="es-s">Share your shop link to get started!</div></div></div>';return;}container.innerHTML=list.map((o,i)=>{const isFinal=o.status==='Delivered'||o.status==='Cancelled',isPacked=o.status==='Packed',isConf=o.status==='Confirmed',isAssigned=!!o.deliveryPartnerId,next=nextStatus(o.status),isCod=(o.paymentMethod||'cod')==='cod';const assignBtn=isPacked?`<button class="status-advance-btn assign" onclick="openAssignModal('${o.id}')">Assign Delivery Partner</button>`:'';const advBtn=isConf&&next?`<button class="status-advance-btn advance" onclick="advanceOrder('${o.id}','${o.status}','${o.productId||''}',${o.qty||1})">Mark Packed</button>`:'';const cancelBtn=!isFinal?`<button class="status-advance-btn cancel" onclick="cancelOrder('${o.id}')">Cancel</button>`:'';const partnerChip=isAssigned&&!isFinal?`<div class="partner-assigned-chip"><div class="pac-av">${o.deliveryPartnerVehicleEmoji||''}</div><span class="pac-text">${o.deliveryPartnerName||'Partner'}</span><span class="pac-vehicle"> ${o.deliveryPartnerPhone||''}</span></div>`:'';return`<div class="card" style="margin-bottom:12px;padding:18px"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px"><div style="font-family:var(--disp);font-size:.68rem;font-weight:800;color:var(--mid);background:var(--off);padding:4px 8px;border-radius:6px">#${i+1}</div><div><div style="font-weight:700;font-size:.94rem">${o.productName}</div><div style="font-size:.74rem;color:var(--mid);margin-top:2px">${o.category} - Qty: ${o.qty} - <span style="color:var(--orange);font-weight:700">Rs. ${o.total}</span></div></div></div><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span class="status-pill ${STATUS_CLS[o.status]||'sp-confirmed'}">${STATUS_IC[o.status]||''} ${o.status}</span><span class="pay-pill ${isCod?'pay-pill-cod':'pay-pill-online'}">${isCod?' COD':' Online'}</span><div style="font-size:.72rem;color:var(--mid)">${new Date(o.orderedAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</div></div></div>${buildStepper(o.status)}${partnerChip}${codReminder(o)}<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;padding:12px;background:var(--off);border-radius:10px"><div><div style="font-size:.62rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.05em">Customer Phone</div><div style="font-size:.8rem;font-weight:600;margin-top:3px">${o.phone||''}</div></div><div><div style="font-size:.62rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.05em">Delivery Address</div><div style="font-size:.78rem;font-weight:500;margin-top:3px;line-height:1.4">${o.deliveryAddress||''}</div></div><div>${payInfoBlock(o)}</div><div><div style="font-size:.62rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.05em">Ordered At</div><div style="font-size:.8rem;font-weight:600;margin-top:3px">${new Date(o.orderedAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center">${advBtn}${assignBtn}${cancelBtn}${isFinal?`<div style="font-size:.74rem;color:var(--mid);font-style:italic">${o.status==='Delivered'?'Order completed':'Order cancelled'}</div>`:''}${o.status==='Ready for Pickup'||o.status==='Picked Up'||o.status==='Out for Delivery'?'<div style="font-size:.72rem;color:var(--mid)">Partner is handling delivery</div>':''}</div></div>`;}).join('');}
+
+const _renderOrdersPanelBase=renderOrdersPanel;
+renderOrdersPanel=function(){_renderOrdersPanelBase();setTimeout(renderHandoverActions,0);};
+function renderHandoverActions(){
+ const container=document.getElementById('orders-container');if(!container)return;
+ container.querySelectorAll('.handover-alert').forEach(x=>x.remove());
+ const pending=_orders.filter(o=>o.status==='Ready for Pickup'&&o.riderReachedShop&&!o.shopHandoverConfirmed);
+ const confirmed=_orders.filter(o=>o.shopHandoverConfirmed&&o.status!=='Delivered'&&o.status!=='Cancelled');
+ [...pending,...confirmed].reverse().forEach(o=>{
+  const row=document.createElement('div');row.className='card handover-alert';row.style.cssText='margin-bottom:12px;padding:14px 18px;border:1px solid '+(o.shopHandoverConfirmed?'#A7E6C1':'#E53935')+';display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap';
+  const info=document.createElement('div');info.innerHTML='<div style="font-weight:800">'+(o.shopHandoverConfirmed?'Handover confirmed':'Delivery partner is at the shop')+'</div><div style="font-size:.75rem;color:var(--mid);margin-top:3px">'+(o.productName||'Order')+' · '+(o.deliveryPartnerName||'Delivery partner')+'</div>';row.appendChild(info);
+  if(!o.shopHandoverConfirmed){const btn=document.createElement('button');btn.className='status-advance-btn handover';btn.textContent='Handed to Delivery Partner';btn.onclick=()=>confirmShopHandover(o.id);row.appendChild(btn);}
+  container.prepend(row);
+ });
+}
+
+// Revenue 
+function renderRevenuePanel(){if(!sellerReady()){document.getElementById('rv-total').textContent='Locked';document.getElementById('rv-orders').textContent='0';document.getElementById('rv-cod').textContent='Locked';document.getElementById('rv-avg').textContent='Locked';const pb=document.getElementById('rev-pay-breakdown'),rp=document.getElementById('rev-by-product'),rc=document.getElementById('rev-chart');if(pb)pb.innerHTML='';if(rp)rp.innerHTML='';if(rc)rc.innerHTML='';return;}const conf=_orders.filter(o=>o.status!=='Cancelled');const total=conf.reduce((s,o)=>s+o.total,0),avg=conf.length?Math.round(total/conf.length):0,codPend=_orders.filter(o=>o.status!=='Cancelled'&&o.status!=='Delivered'&&(o.paymentMethod||'cod')==='cod').reduce((s,o)=>s+o.total,0),codTotal=conf.filter(o=>(o.paymentMethod||'cod')==='cod').length,onlineTotal=conf.filter(o=>o.paymentMethod==='online').length;document.getElementById('rv-total').textContent='Rs. '+total.toLocaleString('en-IN');document.getElementById('rv-orders').textContent=conf.length;document.getElementById('rv-cod').textContent='Rs. '+codPend.toLocaleString('en-IN');document.getElementById('rv-avg').textContent='Rs. '+avg.toLocaleString('en-IN');const pb=document.getElementById('rev-pay-breakdown');if(pb)pb.innerHTML=`<div style="flex:1;min-width:180px;padding:16px;background:var(--warn-p);border:1px solid var(--warn-b);border-radius:12px"><div style="font-family:var(--disp);font-size:1.4rem;font-weight:800;color:var(--warn)">${codTotal}</div><div style="font-size:.72rem;color:var(--mid);font-weight:600;margin-top:2px">Cash on Delivery orders</div><div style="font-size:.7rem;color:var(--warn);font-weight:700;margin-top:8px">Rs. ${codPend.toLocaleString('en-IN')} pending collection</div></div><div style="flex:1;min-width:180px;padding:16px;background:#F2EAFF;border:1px solid #D8C4FE;border-radius:12px"><div style="font-family:var(--disp);font-size:1.4rem;font-weight:800;color:#6D28D9">${onlineTotal}</div><div style="font-size:.72rem;color:var(--mid);font-weight:600;margin-top:2px">Online Payment orders</div><div style="font-size:.7rem;color:#6D28D9;font-weight:700;margin-top:8px">Rs. ${conf.filter(o=>o.paymentMethod==='online').reduce((s,o)=>s+o.total,0).toLocaleString('en-IN')} received</div></div>`;const byProd={};conf.forEach(o=>{byProd[o.productName]=(byProd[o.productName]||0)+o.total;});const pl=Object.entries(byProd).sort((a,b)=>b[1]-a[1]).slice(0,6),maxR=pl.length?pl[0][1]:1;document.getElementById('rev-by-product').innerHTML=pl.length?pl.map(([n,r])=>`<div style="display:flex;align-items:center;gap:12px"><div style="font-size:.82rem;font-weight:600;min-width:140px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n}</div><div style="flex:1;background:var(--off);border-radius:30px;height:10px;overflow:hidden;border:1px solid var(--border)"><div style="height:100%;background:linear-gradient(90deg,var(--orange),var(--orange-d));border-radius:30px;width:${Math.round(r/maxR*100)}%;transition:width .7s ease"></div></div><div style="font-family:var(--disp);font-size:.82rem;font-weight:800;color:var(--orange);min-width:70px;text-align:right">Rs. ${r.toLocaleString('en-IN')}</div></div>`).join(''):'<div style="color:var(--mid);font-size:.85rem">No revenue data yet.</div>';const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const key=d.toISOString().slice(0,10),lbl=d.toLocaleDateString('en-IN',{weekday:'short'}),rev=conf.filter(o=>o.orderedAt.slice(0,10)===key).reduce((s,o)=>s+o.total,0);days.push({lbl,rev});}const maxDay=Math.max(...days.map(d=>d.rev),1);document.getElementById('rev-chart').innerHTML=days.map(d=>`<div class="chart-bar-col"><div style="font-size:.62rem;color:var(--orange);font-weight:700;height:18px;display:flex;align-items:center">${d.rev?'Rs. '+d.rev.toLocaleString('en-IN'):''}</div><div class="chart-bar" style="height:${Math.round(d.rev/maxDay*100)}px"></div><div class="chart-bar-lbl">${d.lbl}</div></div>`).join('');}
+
+window.downloadPDF=()=>{if(!requireSellerReady())return;if(!_orders.length){toast('No orders to download','err');return;}const conf=_orders.filter(o=>o.status!=='Cancelled'),total=conf.reduce((s,o)=>s+(Number(o.total)||0),0),shopName=vs&&vs.name?vs.name:'Nexcart Shop',report=window.open('','_blank');if(!report){toast('Allow pop-ups to open the report.','err');return;}const doc=report.document;doc.title='Nexcart Orders - '+shopName;const style=doc.createElement('style');style.textContent='body{font-family:Arial,sans-serif;padding:32px;color:#17171a}h1{color:#ed1224;margin:0 0 8px}button{padding:10px 20px;background:#ed1224;color:white;border:0;border-radius:8px;font-weight:700;cursor:pointer}table{width:100%;border-collapse:collapse;margin-top:22px;font-size:12px}th{background:#090a0c;color:white;padding:9px;text-align:left}td{padding:8px;border-bottom:1px solid #e7e7ea}tr:nth-child(even){background:#f7f7f8}@media print{button{display:none}}';doc.head.appendChild(style);const title=doc.createElement('h1');title.textContent='Nexcart Order Report';doc.body.appendChild(title);const meta=doc.createElement('p');meta.textContent='Shop: '+shopName+' | Generated: '+new Date().toLocaleString('en-IN')+' | Revenue: Rs. '+total.toLocaleString('en-IN');doc.body.appendChild(meta);const printBtn=doc.createElement('button');printBtn.textContent='Print / Save PDF';printBtn.onclick=()=>report.print();doc.body.appendChild(printBtn);const table=doc.createElement('table'),head=doc.createElement('thead'),headRow=doc.createElement('tr');['#','Product','Qty','Total','Payment','Phone','Delivery Address','Partner','Status','Date'].forEach(x=>{const th=doc.createElement('th');th.textContent=x;headRow.appendChild(th);});head.appendChild(headRow);table.appendChild(head);const body=doc.createElement('tbody');_orders.forEach((o,i)=>{const row=doc.createElement('tr'),values=[i+1,o.productName||'',o.qty||0,'Rs. '+(o.total||0),(o.paymentMethod||'cod')==='cod'?'COD':'Online',o.phone||'',o.deliveryAddress||'',o.deliveryPartnerName||'Unassigned',o.status||'',new Date(o.orderedAt).toLocaleDateString('en-IN')];values.forEach(v=>{const td=doc.createElement('td');td.textContent=v;row.appendChild(td);});body.appendChild(row);});table.appendChild(body);doc.body.appendChild(table);toast('Report ready. Click Print / Save PDF');};
+
+// Navigation 
+window.goPanel=n=>{refreshSetupGate();document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.sb-item').forEach(x=>x.classList.remove('active'));document.getElementById('panel-'+n).classList.add('active');const idx={overview:0,shop:1,documents:2,products:3,add:4,orders:5,partners:6,revenue:7}[n];if(idx!==undefined)document.querySelectorAll('.sb-item')[idx].classList.add('active');if(['products','add','orders','revenue'].includes(n)&&!sellerReady())toast(setupMessage(),'err');if(n==='shop')setTimeout(()=>{if(map)map.invalidateSize();else initMap();},100);if(n==='orders'||n==='revenue'){if(!_orders.length)loadOrders();}if(n==='documents')updateDocVerifyStrip();if(n==='partners')renderPartnersPanel();refreshSetupGate();};
+</script>
+</body>
+</html>
+
+
