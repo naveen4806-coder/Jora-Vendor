@@ -568,7 +568,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
  </div>
  <div class="card">
  <div class="form-row" style="margin-bottom:13px">
- <div class="fg" style="margin:0"><label class="fl">Product Name *</label><input class="fi" id="p-name" type="text" placeholder="e.g. Rice" oninput="autoProductImage()"></div>
+ <div class="fg" style="margin:0"><label class="fl">Product Name *</label><input class="fi" id="p-name" type="text" placeholder="e.g. Rice"></div>
  <div class="fg" style="margin:0"><label class="fl">Category *</label>
  <select class="fi" id="p-cat" onchange="onCatChange()">
  <option value="">Select category</option>
@@ -577,7 +577,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
  </div>
  </div>
 
- <div class="fg" style="margin-bottom:13px"><label class="fl">Subcategory *</label><select class="fi" id="p-subcat" onchange="autoProductImage()"><option value="">Select a category first</option></select></div>
+ <div class="fg" style="margin-bottom:13px"><label class="fl">Subcategory *</label><select class="fi" id="p-subcat"><option value="">Select a category first</option></select></div>
 
  <!-- Category info strips -->
  <div class="cat-info-strip cis-fashion" id="cis-fashion">Fashion selected. Pick available sizes below.</div>
@@ -651,12 +651,19 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
  </div>
  <div class="fg" style="margin-bottom:6px"><label class="fl">Product Description (optional)</label><input class="fi" id="p-desc" type="text" placeholder="Short product description"></div>
 
- <!-- Automatic Product Image -->
+ <!-- Product Image: camera or gallery -->
  <div class="fg" style="margin-bottom:18px">
- <label class="fl">Automatic Product Image</label>
- <div class="img-preview-box" id="auto-img-wrap" style="display:none"><img id="auto-img-preview" src="" alt="Automatically selected product image"></div>
- <div class="img-ph-empty" id="auto-img-empty" style="display:flex"><span>Enter a product name to automatically select its image</span></div>
- <div style="margin-top:7px;font-size:.7rem;color:var(--mid)">Nexcart chooses a matching catalogue image from the product name and category.</div>
+ <label class="fl">Product Image *</label>
+ <div class="img-preview-box" id="auto-img-wrap" style="display:none"><img id="auto-img-preview" src="" alt="Selected product image"></div>
+ <div class="img-ph-empty" id="auto-img-empty" style="display:flex"><span>Take a clear product photo or choose one from your gallery</span></div>
+ <input id="product-camera-input" type="file" accept="image/*" capture="environment" hidden onchange="handleProductImage(event,'camera')">
+ <input id="product-gallery-input" type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="handleProductImage(event,'gallery')">
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+   <button class="btn-sec" type="button" onclick="document.getElementById('product-camera-input').click()">Open Camera</button>
+   <button class="btn-sec" type="button" onclick="document.getElementById('product-gallery-input').click()">Choose Gallery</button>
+ </div>
+ <button class="btn-del" id="remove-product-image" type="button" style="display:none;margin-top:9px" onclick="removeProductImage()">Remove Image</button>
+ <div style="margin-top:7px;font-size:.7rem;color:var(--mid)">JPG, PNG or WebP. The photo is resized automatically for fast loading.</div>
  </div>
 
  <div style="display:flex;gap:11px;align-items:center;flex-wrap:wrap">
@@ -818,7 +825,6 @@ window.onCatChange=()=>{
  _fashionSizes.clear();_kidsSizes.clear();_kidsAges.clear();
  document.querySelectorAll('.size-btn,.age-btn').forEach(b=>b.classList.remove('sel'));
  if(isMeat){document.getElementById('p-price-per-kg').value='';document.getElementById('p-price').value='';calcMeatPrices();}
- autoProductImage();
 };
 
 // Size / Age toggles 
@@ -928,11 +934,9 @@ function updateDocVerifyStrip(){const status=getDocCompleteness();const wrap=doc
 function renderDocOverviewSummary(){const el=document.getElementById('doc-summary-overview');if(!el)return;const docs=[{label:'GST Certificate',key:'gst-cert',numId:'d-gst-num',req:true},{label:'Shop Registration',key:'shop-cert',numId:'d-shop-reg-num',req:true}];el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+docs.map(d=>{const uploaded=!!_uploadedDocs[d.key];const numVal=document.getElementById(d.numId)?.value?.trim();const ok=uploaded&&numVal;return '<div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:10px;background:'+(ok?'var(--success-p)':d.req?'var(--error-p)':'var(--off)')+';border:1px solid '+(ok?'var(--success-b)':d.req?'var(--error-b)':'var(--border)')+'"><span style="font-size:1rem">'+(ok?'':d.req?'':'')+'</span><div><div style="font-size:.8rem;font-weight:700;color:'+(ok?'var(--success)':d.req?'var(--error)':'var(--mid)')+'">'+d.label+'</div><div style="font-size:.68rem;color:var(--mid)">'+(ok?'Uploaded':'Not uploaded')+'</div></div></div>';}).join('')+'</div>';}
 window.saveDocs=()=>{const gstNum=document.getElementById('d-gst-num').value.trim(),shopReg=document.getElementById('d-shop-reg-num').value.trim();if(!vs){smsg('doc-err','Save shop details first.','err');return;}if(!gstNum||gstNum.length!==15){smsg('doc-err','GST Number must be exactly 15 characters.','err');return;}if(!shopReg){smsg('doc-err','Shop registration number is required.','err');return;}if(!_uploadedDocs['gst-cert']||!_uploadedDocs['shop-cert']){smsg('doc-err','Upload both GST Certificate and Shop Registration Certificate.','err');return;}const docs={..._uploadedDocs,'_gst-num':gstNum,'_gst-date':document.getElementById('d-gst-date').value,'_shop-reg-num':shopReg,'_shop-reg-expiry':document.getElementById('d-shop-reg-expiry').value,savedAt:now()};smsg('doc-ok','Saving');shopsCol().doc(cu.id).update({docs,sellerVerified:true,verifiedAt:now()}).then(()=>{if(!vs)vs={};vs.docs=docs;vs.sellerVerified=true;updateDocVerifyStrip();refreshSetupGate();smsg('doc-ok','Documents saved. Selling is unlocked.');toast('Seller setup complete');}).catch(e=>smsg('doc-err',' '+e.message,'err'));};
 
-// Automatic product images selected from product name and category
-const AUTO_IMAGE_KEYWORDS={rice:'photo-1586201375761-83865001e31c',oil:'photo-1474979266404-7eaacbcd87c5',flour:'photo-1509440159596-0249088772ff',spice:'photo-1596040033229-a9821ebd058d',milk:'photo-1550583724-b2692b85b150',egg:'photo-1582722872445-44dc5f7e3c8f',bread:'photo-1509440159596-0249088772ff',cake:'photo-1578985545062-69928b1d9587',pizza:'photo-1565299624946-b28f40a0ae38',burger:'photo-1568901346375-23c9450c58cd',chicken:'photo-1604503468506-a8da13d82791',fish:'photo-1510130387422-82bed34b37e9',chips:'photo-1566478989037-eec170784d0b',chocolate:'photo-1575377427642-087cf684f29d',diaper:'photo-1519689680058-324335c77eba',pen:'photo-1583485088034-697b5bc54ccd',flower:'photo-1490750967868-88aa4486c946',earphone:'photo-1505740420928-5e560c06d30e'};
-const AUTO_IMAGE_CATEGORY={'Grocery':'photo-1542838132-92c53300491e','Fruits & Vegetables':'photo-1610348725531-843dff563e2c','Dairy & Eggs':'photo-1628088062854-d1870b4553da','Bakery':'photo-1509440159596-0249088772ff','Restaurants':'photo-1504674900247-0877df9cc836','Meat & Seafood':'photo-1607623814075-e51df1bdc82f','Snacks & Beverages':'photo-1621939514649-280e2aa9454f','Home Essentials':'photo-1583947215259-38e31be8751f','Personal Care':'photo-1556228720-195a672e8a03','Baby Care':'photo-1515488042361-ee00e0ddd4e4','Stationery':'photo-1455390582262-044cdead277a','Flowers & Gifts':'photo-1490750967868-88aa4486c946','Electronics Accessories':'photo-1516321318423-f06f85e504b3'};
-function generatedProductArtwork(name,cat){const safe=String(name||'Product').replace(/[<>&"']/g,'').slice(0,34),label=String(cat||'NexCart Product').replace(/[<>&"']/g,'').slice(0,28),initial=(safe.trim()[0]||'N').toUpperCase(),svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="650" viewBox="0 0 900 650"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#121212"/><stop offset="1" stop-color="#5b080b"/></linearGradient><radialGradient id="r"><stop stop-color="#ff4b47"/><stop offset="1" stop-color="#e53935"/></radialGradient></defs><rect width="900" height="650" rx="42" fill="url(#g)"/><circle cx="690" cy="210" r="150" fill="url(#r)" opacity=".95"/><text x="690" y="265" text-anchor="middle" font-family="Arial" font-weight="900" font-size="150" fill="white">${initial}</text><text x="65" y="445" font-family="Arial" font-weight="900" font-size="58" fill="white">${safe}</text><text x="67" y="505" font-family="Arial" font-weight="700" font-size="27" fill="#ffcc20">${label}</text><text x="67" y="570" font-family="Arial" font-weight="800" font-size="24" fill="#e53935">NEXCART</text></svg>`;return'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);}
-window.autoProductImage=()=>{const raw=(document.getElementById('p-name')?.value||'').trim(),name=raw.toLowerCase(),sub=(document.getElementById('p-subcat')?.value||'').toLowerCase(),cat=document.getElementById('p-cat')?.value||'',hay=name+' '+sub,key=Object.keys(AUTO_IMAGE_KEYWORDS).find(k=>hay.includes(k)),photo=key?AUTO_IMAGE_KEYWORDS[key]:(AUTO_IMAGE_CATEGORY[cat]||'photo-1542838132-92c53300491e'),fallback=generatedProductArtwork(raw,cat);_imgUrl=name?'https://images.unsplash.com/'+photo+'?auto=format&fit=crop&w=900&q=85':'';const wrap=document.getElementById('auto-img-wrap'),empty=document.getElementById('auto-img-empty'),img=document.getElementById('auto-img-preview');if(name){img.onerror=()=>{img.onerror=null;img.src=fallback;_imgUrl=fallback;};img.src=_imgUrl;img.alt=raw+' product image';wrap.style.display='block';empty.style.display='none';}else{img.onerror=null;img.removeAttribute('src');wrap.style.display='none';empty.style.display='flex';}};
+// Product photo from camera or gallery. Resize before storing in Firestore.
+window.handleProductImage=async(event,source)=>{const input=event.target,file=input.files&&input.files[0];if(!file)return;if(!file.type.startsWith('image/')){toast('Choose a valid image file','err');input.value='';return;}if(file.size>10*1024*1024){toast('Image must be smaller than 10 MB','err');input.value='';return;}try{const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error('Could not read image'));reader.onload=()=>resolve(reader.result);reader.readAsDataURL(file);});const imgObj=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('Invalid image'));im.src=dataUrl;});const max=900,scale=Math.min(1,max/Math.max(imgObj.width,imgObj.height)),w=Math.max(1,Math.round(imgObj.width*scale)),h=Math.max(1,Math.round(imgObj.height*scale)),canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(imgObj,0,0,w,h);_imgUrl=canvas.toDataURL('image/jpeg',.72);if(_imgUrl.length>850000)throw new Error('Processed image is still too large. Choose a simpler photo.');const preview=document.getElementById('auto-img-preview');preview.src=_imgUrl;preview.alt='Selected product photo';document.getElementById('auto-img-wrap').style.display='block';document.getElementById('auto-img-empty').style.display='none';document.getElementById('remove-product-image').style.display='inline-flex';toast(source==='camera'?'Camera photo added':'Gallery photo added');}catch(e){toast(e.message||'Could not process image','err');_imgUrl='';}finally{input.value='';}};
+window.removeProductImage=()=>{_imgUrl='';const preview=document.getElementById('auto-img-preview');preview.removeAttribute('src');document.getElementById('auto-img-wrap').style.display='none';document.getElementById('auto-img-empty').style.display='flex';document.getElementById('remove-product-image').style.display='none';['product-camera-input','product-gallery-input'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});};
 
 // Products 
 function subscribeToProducts(){if(!cu)return;if(prodUnsub)prodUnsub();prodUnsub=productsCol().where('vendorId','==',cu.id).onSnapshot(snap=>{_products=[];snap.forEach(d=>_products.push({id:d.id,...d.data()}));renderProducts(_products);updateStats(_products);renderStockAlerts(_products);},e=>console.error(e));}
@@ -964,6 +968,7 @@ window.addProduct=()=>{
  const name=document.getElementById('p-name').value.trim(),cat=document.getElementById('p-cat').value,subcategory=document.getElementById('p-subcat').value,stock=document.getElementById('p-stock').value,desc=document.getElementById('p-desc').value.trim();
  const isMeat=cat==='Meat & Seafood',isFashion=cat==='Fashion & Clothing',isKids=cat==='Kids & Toys';
  if(!name||!cat||!subcategory||!stock){smsg('prod-err','Name, category, subcategory and stock required.','err');return;}
+ if(!_imgUrl){smsg('prod-err','Take a product photo or choose one from the gallery.','err');return;}
  let price,pricePerKg;
  if(isMeat){pricePerKg=parseFloat(document.getElementById('p-price-per-kg').value);if(!pricePerKg||pricePerKg<=0){smsg('prod-err','Enter price per kg for meat.','err');return;}price=pricePerKg;}
  else{price=parseFloat(document.getElementById('p-price').value);if(!price||price<=0){smsg('prod-err','Enter a valid price.','err');return;}}
@@ -986,7 +991,7 @@ window.clearProdForm=()=>{
  ['cis-fashion','cis-kids','cis-meat'].forEach(id=>document.getElementById(id).classList.remove('show'));
  document.getElementById('price-wrap').style.display='';document.getElementById('stock-label').textContent='Stock Quantity *';document.getElementById('p-stock').placeholder='100';
  document.getElementById('meat-price-grid').innerHTML='<div style="color:var(--mid);font-size:.78rem;grid-column:1/-1;padding:4px 0">Enter price per kg above to see auto-calculated costs.</div>';
- _imgUrl='';const ai=document.getElementById('auto-img-preview');if(ai)ai.removeAttribute('src');const aw=document.getElementById('auto-img-wrap'),ae=document.getElementById('auto-img-empty');if(aw)aw.style.display='none';if(ae)ae.style.display='flex';
+ removeProductImage();
 };
 
 // Partners 
