@@ -545,6 +545,14 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
  <div class="fg"><label class="fl">Short Description</label><input class="fi" id="s-desc" type="text" placeholder="Brief description of your shop"></div>
  </div>
  <div class="card">
+ <div class="card-title"><div class="card-title-ic">LOGO</div>Shop Logo / Shop Photo</div>
+ <p style="font-size:.82rem;color:var(--mid);margin-bottom:14px">Upload a clear logo or full shop image. This image will be visible to customers on the home page.</p>
+ <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+ <div id="shop-logo-preview" style="width:150px;height:100px;border:1.5px solid var(--border);border-radius:12px;background:var(--off);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--mid);font-size:.75rem;text-align:center">No image selected</div>
+ <div style="flex:1;min-width:220px"><div class="img-upload-zone" style="padding:20px"><input id="shop-logo-file" type="file" accept="image/png,image/jpeg,image/webp" onchange="handleShopLogo(this)"><div style="font-weight:700;font-size:.85rem">Click to upload shop image</div><div style="font-size:.7rem;color:var(--mid);margin-top:5px">JPG, PNG or WEBP. Max 5 MB</div></div><div id="shop-logo-status" style="display:none;margin-top:9px;padding:8px 11px;border-radius:8px;font-size:.75rem;font-weight:700"></div><button type="button" class="btn-sec" id="remove-shop-logo" style="display:none;margin-top:9px" onclick="removeShopLogo()">Remove image</button></div>
+ </div>
+ </div>
+ <div class="card">
  <div class="card-title"><div class="card-title-ic">LC</div>Pin Your Shop Location</div>
  <p style="font-size:.83rem;color:var(--mid);margin-bottom:10px">Click the map to pin your exact shop location, or use auto-detect.</p>
  <button class="btn-sec" onclick="detectLoc()">Auto-detect my location</button>
@@ -821,7 +829,7 @@ const distLabel=km=>km<1?(km*1000).toFixed(0)+' m away':km.toFixed(1)+' km away'
 
 let cu=null,vs=null,map=null,mkr=null,slat=null,slng=null;
 let prodUnsub=null,partnerUnsub=null,orderUnsub=null,_orders=[],_products=[],_partners=[];
-let _restockId=null,_uploadedDocs={},_assignOrderId=null;
+let _restockId=null,_uploadedDocs={},_assignOrderId=null,_shopLogoFile=null,_removeExistingShopLogo=false;
 let _imgUrl='',_imgTab='upload';
 // dynamic field state
 let _fashionSizes=new Set(),_kidsSizes=new Set(),_kidsAges=new Set();
@@ -961,15 +969,25 @@ window.detectLoc=()=>{if(!navigator.geolocation){toast('Geolocation not supporte
 
 // Shop 
 function loadShopFromFirebase(){if(!cu)return;setFbStatus('loading');shopsCol().doc(cu.id).get().then(doc=>{setFbStatus('ok');if(doc.exists){vs={id:doc.id,...doc.data()};fillShopForm(vs);updateSummary(vs);if(vs.docs)loadDocState(vs.docs);subscribeToProducts();refreshSetupGate();loadOrders();}else{vs=null;subscribeToProducts();refreshSetupGate();}}).catch(e=>{setFbStatus('err');toast('Shop could not load: '+e.message,'err');});}
-function fillShopForm(d){document.getElementById('s-name').value=d.name||'';document.getElementById('s-cat').value=d.category||'';document.getElementById('s-addr').value=d.address||'';document.getElementById('s-phone').value=d.phone||'';document.getElementById('s-hours').value=d.hours||'';document.getElementById('s-desc').value=d.desc||'';if(d.lat&&d.lng){slat=d.lat;slng=d.lng;document.getElementById('map-txt').textContent='Pinned: '+d.lat.toFixed(5)+', '+d.lng.toFixed(5);}}
+function showShopLogoPreview(url){const box=document.getElementById('shop-logo-preview'),remove=document.getElementById('remove-shop-logo');if(!box)return;if(url){box.innerHTML='<img src="'+url+'" alt="Shop image preview" style="width:100%;height:100%;object-fit:cover">';if(remove)remove.style.display='inline-flex';}else{box.textContent='No image selected';if(remove)remove.style.display='none';}}
+function shopLogoStatus(text,type){const el=document.getElementById('shop-logo-status');if(!el)return;el.style.display='block';el.textContent=text;el.style.background=type==='err'?'var(--error-p)':type==='ok'?'var(--success-p)':'var(--blue-p)';el.style.color=type==='err'?'var(--error)':type==='ok'?'var(--success)':'var(--blue)';el.style.border='1px solid '+(type==='err'?'var(--error-b)':type==='ok'?'var(--success-b)':'var(--blue-pm)');}
+async function uploadShopLogoFile(file){const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_'),ref=storage.ref('shop-images/'+cu.id+'/'+Date.now()+'-'+safeName),snap=await ref.put(file);return snap.ref.getDownloadURL();}
+window.handleShopLogo=async input=>{const file=input?.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){toast('Choose a JPG, PNG or WEBP image','err');input.value='';return;}if(file.size>5*1024*1024){toast('Shop image must be smaller than 5 MB','err');input.value='';return;}_shopLogoFile=file;_removeExistingShopLogo=false;const reader=new FileReader();reader.onload=e=>showShopLogoPreview(e.target.result);reader.readAsDataURL(file);if(!cu||!vs){shopLogoStatus('Image ready. Save the shop to upload it.','info');return;}try{shopLogoStatus('Uploading image...','info');const url=await uploadShopLogoFile(file);await shopsCol().doc(cu.id).set({shopImageUrl:url,logoUrl:url,image:url,updatedAt:now()},{merge:true});vs.shopImageUrl=url;vs.logoUrl=url;vs.image=url;_shopLogoFile=null;showShopLogoPreview(url);shopLogoStatus('Image saved and now visible on the customer home page.','ok');toast('Shop image uploaded');}catch(e){shopLogoStatus('Upload failed: '+e.message,'err');toast('Shop image upload failed','err');}};
+window.removeShopLogo=()=>{_shopLogoFile=null;_removeExistingShopLogo=true;const input=document.getElementById('shop-logo-file');if(input)input.value='';showShopLogoPreview('');};
+function fillShopForm(d){document.getElementById('s-name').value=d.name||'';document.getElementById('s-cat').value=d.category||'';document.getElementById('s-addr').value=d.address||'';document.getElementById('s-phone').value=d.phone||'';document.getElementById('s-hours').value=d.hours||'';document.getElementById('s-desc').value=d.desc||'';showShopLogoPreview(d.shopImageUrl||d.logoUrl||d.image||'');if(d.lat&&d.lng){slat=d.lat;slng=d.lng;document.getElementById('map-txt').textContent='Pinned: '+d.lat.toFixed(5)+', '+d.lng.toFixed(5);}}
 const infoRow=(k,v)=>'<div class="info-row2"><div class="ik">'+k+'</div><div class="iv">'+(v||'')+'</div></div>';
 function updateSummary(d){if(!d||!d.name)return;document.getElementById('st-st').innerHTML='<span class="live-badge"><span class="live-d"></span>Live</span>';document.getElementById('shop-summary').innerHTML='<div class="info-grid">'+infoRow('Shop Name',d.name)+infoRow('Category',d.category)+infoRow('Address',d.address)+infoRow('Phone',d.phone)+infoRow('Hours',d.hours)+infoRow('Location',d.lat?d.lat.toFixed(4)+', '+d.lng.toFixed(4):null)+'</div>';}
-window.saveShop=()=>{
+window.saveShop=async()=>{
  const name=document.getElementById('s-name').value.trim(),cat=document.getElementById('s-cat').value,addr=document.getElementById('s-addr').value.trim();
  if(!name||!cat||!addr){smsg('shop-err','Name, category and address required.','err');return;}
  const data={name,category:cat,address:addr,phone:document.getElementById('s-phone').value.trim(),hours:document.getElementById('s-hours').value.trim(),desc:document.getElementById('s-desc').value.trim(),lat:slat||0,lng:slng||0,ownerUid:auth.currentUser.uid,vendorId:cu.id,vendorName:cu.name,vendorEmail:cu.email,rating:4.5,sellerVerified:!!(vs&&vs.sellerVerified===true),updatedAt:now(),createdAt:(vs&&vs.createdAt)||now(),docs:vs?.docs||{}};
  smsg('shop-ok','Saving');
- shopsCol().doc(cu.id).set(data).then(()=>{vs={id:cu.id,...data};updateSummary(vs);refreshSetupGate();loadOrders();smsg('shop-ok','Shop saved. You can start selling now; documents are optional.');toast('Shop saved');}).catch(e=>smsg('shop-err',' '+e.message,'err'));
+ try{
+  if(_shopLogoFile){smsg('shop-ok','Uploading shop image');const safeName=_shopLogoFile.name.replace(/[^a-zA-Z0-9._-]/g,'_'),ref=storage.ref('shop-images/'+cu.id+'/'+Date.now()+'-'+safeName),snap=await ref.put(_shopLogoFile);data.shopImageUrl=await snap.ref.getDownloadURL();data.logoUrl=data.shopImageUrl;data.image=data.shopImageUrl;}
+  else if(_removeExistingShopLogo){data.shopImageUrl='';data.logoUrl='';data.image='';}
+  else{const existing=(vs&&(vs.shopImageUrl||vs.logoUrl||vs.image))||'';data.shopImageUrl=existing;data.logoUrl=existing;data.image=existing;}
+  await shopsCol().doc(cu.id).set(data);vs={id:cu.id,...data};_shopLogoFile=null;_removeExistingShopLogo=false;showShopLogoPreview(data.shopImageUrl);updateSummary(vs);refreshSetupGate();loadOrders();smsg('shop-ok','Shop saved. Your image is now visible to customers.');toast('Shop saved');
+ }catch(e){smsg('shop-err',' '+e.message,'err');}
 };
 
 // Documents 
