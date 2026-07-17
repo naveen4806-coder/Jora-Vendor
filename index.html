@@ -533,7 +533,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
  <div class="fg" style="margin:0"><label class="fl">Category *</label>
  <select class="fi" id="s-cat">
  <option value="">Select category</option>
- <option>Grocery</option><option>Fruits &amp; Vegetables</option><option>Dairy &amp; Eggs</option><option>Bakery</option><option>Restaurants</option><option>Meat &amp; Seafood</option><option>Snacks &amp; Beverages</option><option>Home Essentials</option><option>Personal Care</option><option>Baby Care</option><option>Stationery</option><option>Flowers &amp; Gifts</option><option>Electronics Accessories</option>
+ <option>Grocery</option><option>Fruits &amp; Vegetables</option><option>Dairy &amp; Eggs</option><option>Bakery</option><option>Restaurants</option><option>Meat &amp; Seafood</option><option>Snacks &amp; Beverages</option><option>Home Essentials</option><option>Personal Care</option><option>Women's Care</option><option>Health</option><option>Baby Care</option><option>Stationery</option><option>Flowers &amp; Gifts</option><option>Electronics Accessories</option>
  </select>
  </div>
  </div>
@@ -630,7 +630,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
  <div class="fg" style="margin:0"><label class="fl">Category *</label>
  <select class="fi" id="p-cat" onchange="onCatChange()">
  <option value="">Select category</option>
- <option>Grocery</option><option>Fruits &amp; Vegetables</option><option>Dairy &amp; Eggs</option><option>Bakery</option><option>Restaurants</option><option>Meat &amp; Seafood</option><option>Snacks &amp; Beverages</option><option>Home Essentials</option><option>Personal Care</option><option>Baby Care</option><option>Stationery</option><option>Flowers &amp; Gifts</option><option>Electronics Accessories</option>
+ <option>Grocery</option><option>Fruits &amp; Vegetables</option><option>Dairy &amp; Eggs</option><option>Bakery</option><option>Restaurants</option><option>Meat &amp; Seafood</option><option>Snacks &amp; Beverages</option><option>Home Essentials</option><option>Personal Care</option><option>Women's Care</option><option>Health</option><option>Baby Care</option><option>Stationery</option><option>Flowers &amp; Gifts</option><option>Electronics Accessories</option>
  </select>
  </div>
  </div>
@@ -857,7 +857,7 @@ function requireSellerReady(messageTarget){
 }
 
 const FINAL_SUBCATEGORIES={
- 'Grocery':['Rice','Oil','Flour','Sugar','Spices','Pulses'],'Fruits & Vegetables':['Fresh fruits','Fresh vegetables'],'Dairy & Eggs':['Milk','Curd','Butter','Paneer','Eggs'],'Bakery':['Bread','Cakes','Cookies','Pastries'],'Restaurants':['Meals','Biryani','Pizza','Burgers','Dosa','Fried Rice'],'Meat & Seafood':['Chicken','Mutton','Fish','Prawns'],'Snacks & Beverages':['Chips','Chocolates','Soft drinks','Juices','Water'],'Home Essentials':['Cleaning products','Detergents','Kitchen essentials','Garbage bags'],'Personal Care':['Soap','Shampoo','Toothpaste','Toothbrush','Face wash','Hair oil'],'Baby Care':['Diapers','Baby wipes','Baby lotion','Baby powder','Baby shampoo','Baby soap','Feeding bottles','Baby food','Baby cereal'],'Stationery':['Pens','Notebooks','School supplies','Printer paper'],'Flowers & Gifts':['Bouquets','Greeting cards','Gift boxes','Chocolates'],'Electronics Accessories':['Chargers','USB cables','Earphones','Phone cases','Power banks']
+'Grocery':['Rice','Oil','Flour','Sugar','Spices','Pulses'],'Fruits & Vegetables':['Fresh fruits','Fresh vegetables'],'Dairy & Eggs':['Milk','Curd','Butter','Paneer','Eggs'],'Bakery':['Bread','Cakes','Cookies','Pastries'],'Restaurants':['Meals','Biryani','Pizza','Burgers','Dosa','Fried Rice'],'Meat & Seafood':['Chicken','Mutton','Fish','Prawns'],'Snacks & Beverages':['Chips','Chocolates','Soft drinks','Juices','Water'],'Home Essentials':['Cleaning products','Detergents','Kitchen essentials','Garbage bags'],'Personal Care':['Soap','Shampoo','Toothpaste','Toothbrush','Face wash','Hair oil'],"Women's Care":['Sanitary pads','Panty liners','Tampons','Menstrual cups','Intimate hygiene','Period pain relief'],'Health':['Fever','Cold','Body Pain','Headache','Stomach Pain','Dysentery','Food Poisoning','Condoms','Bandages','Itch Ointments'],'Baby Care':['Diapers','Baby wipes','Baby lotion','Baby powder','Baby shampoo','Baby soap','Feeding bottles','Baby food','Baby cereal'],'Stationery':['Pens','Notebooks','School supplies','Printer paper'],'Flowers & Gifts':['Bouquets','Greeting cards','Gift boxes','Chocolates'],'Electronics Accessories':['Chargers','USB cables','Earphones','Phone cases','Power banks']
 };
 // Category change show/hide dynamic fields 
 window.onCatChange=()=>{
@@ -1137,4 +1137,3 @@ window.goPanel=n=>{closeVendorMenu();refreshSetupGate();document.querySelectorAl
 <script src="nexcart-notifications.js"></script>
 </body>
 </html>
-
