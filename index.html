@@ -1261,5 +1261,27 @@ function setup(){var button=document.querySelector('#panel-documents .btn-blue[o
 var timer=setInterval(function(){setup();if(document.getElementById('zcc-root'))clearInterval(timer);},300);
 })();
 </script>
+<style id="zorra-vendor-export-verify-style">.zorra-verified{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;width:18px;height:18px;border-radius:50%;background:#1473e6;color:#fff;font-size:12px;font-weight:900;vertical-align:middle;box-shadow:0 0 0 2px #e7f1ff}.btn-dl.excel{background:#167d45;color:#fff;border-color:#167d45}</style>
+<script id="zorra-vendor-export-verification">
+(function(){function cell(v){v=v==null?'':String(v);return '"'+v.replace(/"/g,'""')+'"';}function save(rows){var csv='\uFEFF'+rows.map(function(r){return r.map(cell).join(',');}).join('\r\n'),a=document.createElement('a'),u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=u;a.download='zorra-'+((vs&&vs.name)||'vendor').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(function(){URL.revokeObjectURL(u);},1500);}
+window.exportVendorExcel=function(){if(!requireSellerReady())return;var rows=[['Record Type','ID','Name','Quantity / Stock','Vendor Amount','Commission','Delivery Charge','Customer Total','Status','Customer / Shop','Date']];(_orders||[]).forEach(function(o){var c=orderCharges(o);rows.push(['Order',o.id,o.productName||'',o.qty||0,c.vendorAmount,c.commission,c.delivery,c.customerTotal,o.status||'',o.phone||'',o.createdAt||o.orderedAt||'']);});(_products||[]).forEach(function(p){rows.push(['Product',p.id,p.name,p.stock==null?'':p.stock,p.price||0,'','','',p.active===false?'Hidden':'Live',(vs&&vs.name)||'',p.createdAt||'']);});save(rows);toast('Excel-compatible vendor sheet downloaded');};
+var box=document.querySelector('.dl-btns');if(box&&!document.getElementById('vendor-excel-btn')){var b=document.createElement('button');b.id='vendor-excel-btn';b.className='btn-dl excel';b.textContent='Export Excel Sheet';b.onclick=exportVendorExcel;box.appendChild(b);}function badge(){if(!vs||!(vs.verificationStatus==='verified'||vs.adminVerified===true))return;var targets=[document.getElementById('ov-sub'),document.querySelector('.tb-shop-name'),document.querySelector('.sidebar-shop-name')];targets.forEach(function(t){if(t&&!t.querySelector('.zorra-verified'))t.insertAdjacentHTML('beforeend',' <span class="zorra-verified" title="Admin verified vendor" aria-label="Admin verified vendor">✓</span>');});}var oldSummary=window.renderShopSummary||function(){};window.renderShopSummary=function(){var r=oldSummary.apply(this,arguments);setTimeout(badge,0);return r;};var oldPartners=window.renderPartnersPanel;window.renderPartnersPanel=function(){var r=oldPartners.apply(this,arguments);setTimeout(function(){var list=[].concat(_partners||[]).sort(function(a,b){return(b.isOnline?1:0)-(a.isOnline?1:0);});document.querySelectorAll('#partners-grid .dp-card').forEach(function(card,i){var p=list[i],n=card.querySelector('.dp-card-name');if(p&&n&&(p.proofStatus==='verified'||p.verificationStatus==='verified'||p.adminVerified===true)&&!n.querySelector('.zorra-verified'))n.insertAdjacentHTML('beforeend',' <span class="zorra-verified" title="Verified delivery partner">✓</span>');});},0);return r;};setInterval(badge,1200);
+})();
+</script>
+<style id="zorra-production-polish">
+:root{--z-space-1:8px;--z-space-2:16px;--z-space-3:24px;--z-space-4:32px;--z-navy:#071a3d;--z-red:#F33520;--z-white:#fff;--z-radius-sm:10px;--z-radius-md:16px;--z-radius-lg:22px;--z-shadow-1:0 1px 2px rgba(7,26,61,.04),0 8px 24px rgba(7,26,61,.06);--z-shadow-2:0 2px 4px rgba(7,26,61,.05),0 16px 40px rgba(7,26,61,.10);--z-ease:cubic-bezier(.2,.8,.2,1)}
+html{scroll-behavior:smooth}body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,a,input,select,textarea{font:inherit}button,a,[role="button"]{-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(243,53,32,.24)!important;outline-offset:2px}
+button:not(:disabled),a,[role="button"]{transition:transform .18s var(--z-ease),box-shadow .18s var(--z-ease),background-color .18s ease,border-color .18s ease,color .18s ease}
+button:not(:disabled):active,[role="button"]:active{transform:translateY(1px) scale(.985)}
+.card,.panel,.form-card,.metric,.order-card,.dp-card{border-radius:var(--z-radius-md);box-shadow:var(--z-shadow-1)}
+input,select,textarea,.input,.fi{min-height:44px;border-radius:var(--z-radius-sm)}
+.primary,.btn-blue,.btn-red,.btn-sec,.mini,.btn-dl{min-height:40px;border-radius:var(--z-radius-sm);font-weight:750;letter-spacing:-.01em}
+.primary:hover,.btn-blue:hover,.btn-red:hover,.btn-sec:hover,.mini:hover,.btn-dl:hover{transform:translateY(-1px);box-shadow:var(--z-shadow-1)}
+table{border-collapse:separate;border-spacing:0}th{font-size:.7rem;letter-spacing:.04em;text-transform:uppercase}td,th{vertical-align:middle}
+@media(max-width:760px){.card,.panel,.form-card{border-radius:14px}.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}button,.primary,.btn-blue,.btn-red,.btn-sec{min-height:44px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+</style>
 </body>
 </html>
