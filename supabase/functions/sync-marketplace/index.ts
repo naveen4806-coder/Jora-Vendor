@@ -19,7 +19,12 @@ Deno.serve(async (request) => {
   if (error || !document || document.owner_id !== identity.user.id) return Response.json({ error: 'Record not found' }, { status: 404, headers: cors });
   const user = createClient(userUrl, userKey);
   const data = document.data;
-  if (collection === 'shops') await user.from('market_shops').upsert({ vendor_shop_id:id, vendor_id:document.owner_id, data, updated_at:new Date().toISOString() });
-  else await user.from('market_products').upsert({ vendor_product_id:id, vendor_id:document.owner_id, shop_id:data.shopId || document.owner_id, data, updated_at:new Date().toISOString() });
+  const payload = collection === 'shops'
+    ? { vendor_shop_id:id, vendor_id:document.owner_id, data, updated_at:new Date().toISOString() }
+    : { vendor_product_id:id, vendor_id:document.owner_id, shop_id:data.shopId || document.owner_id, data, updated_at:new Date().toISOString() };
+  const { error: writeError } = collection === 'shops'
+    ? await user.from('market_shops').upsert(payload)
+    : await user.from('market_products').upsert(payload);
+  if (writeError) return Response.json({ error: `User-project sync failed: ${writeError.message}` }, { status: 502, headers: cors });
   return Response.json({ ok:true }, { headers: cors });
 });
