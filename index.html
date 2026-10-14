@@ -835,7 +835,7 @@ let _fashionSizes=new Set(),_kidsSizes=new Set(),_kidsAges=new Set();
 const toast=(m,t='ok')=>{const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.className='toast',3500);};
 const smsg=(id,m,t='ok')=>{const e=document.getElementById(id);if(!e)return;e.textContent=m;e.className='smsg show '+t;setTimeout(()=>e.className='smsg',4500);};
 const setDataStatus=s=>{const e=document.getElementById('fb-indicator');if(!e)return;const mp={ok:['Connected','ok'],err:['Offline','err'],loading:['Connecting','loading']};const[txt,cls]=mp[s]||mp.loading;e.textContent=txt;e.className='fb-status '+cls;};
-const showScreen=s=>{document.getElementById('screen-auth').className=s==='auth'?'active':'';document.getElementById('screen-dash').className=s==='dash'?'active':'';};
+const showScreen=s=>{const authScreen=document.getElementById('screen-auth'),dashScreen=document.getElementById('screen-dash'),showAuth=s==='auth';authScreen.className=showAuth?'active':'';dashScreen.className=showAuth?'':'active';authScreen.hidden=!showAuth;dashScreen.hidden=showAuth;authScreen.setAttribute('aria-hidden',String(!showAuth));dashScreen.setAttribute('aria-hidden',String(showAuth));window.scrollTo(0,0);};
 function shopDetailsReady(){return !!(vs&&vs.name&&vs.category&&vs.address);}
 function sellerReady(){return shopDetailsReady();}
 function setupMessage(){if(!shopDetailsReady())return 'Save shop name, category, and full address first. Documents are optional.';return 'Shop setup complete. Products and orders are unlocked.';}
@@ -1430,6 +1430,7 @@ body{background:#f5faf6!important;color:#203126!important}.sidebar,.topbar{backg
 /* Keep authentication focused: remove the promotional panel and center login/register. */
 #screen-auth{display:none!important;min-height:100vh!important;background:linear-gradient(145deg,#f7fff9 0%,#eaf8ee 100%)!important;align-items:center!important;justify-content:center!important;padding:28px!important}#screen-auth.active{display:flex!important}.auth-left{display:none!important}.auth-right{width:min(100%,500px)!important;min-height:0!important;flex:none!important;background:#fff!important;border:1px solid #d9e9de!important;border-radius:20px!important;box-shadow:0 20px 55px rgba(21,87,42,.13)!important;padding:42px 38px 28px!important}.auth-form{max-width:100%!important;margin:0!important}.auth-footer{margin-top:28px!important;text-align:center!important;color:#617267!important}@media(max-width:560px){#screen-auth{padding:16px!important}.auth-right{padding:30px 22px 24px!important;border-radius:16px!important}}
 </style>
+<style id="jora-screen-switch-guard">#screen-auth[hidden],#screen-dash[hidden]{display:none!important}#screen-auth:not(.active){display:none!important}#screen-dash:not(.active){display:none!important}</style>
 </body>
 </html>
 
