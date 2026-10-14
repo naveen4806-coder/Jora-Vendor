@@ -464,7 +464,6 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
  <div class="amsg err" id="a-err"></div><div class="amsg ok" id="a-ok"></div>
  <button class="btn-submit" id="a-btn" onclick="handleAuth()">Login</button>
  </div>
- <div class="auth-footer">Powered by Navistara Groups</div>
  </div>
 </div>
 
@@ -835,7 +834,7 @@ let _fashionSizes=new Set(),_kidsSizes=new Set(),_kidsAges=new Set();
 const toast=(m,t='ok')=>{const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.className='toast',3500);};
 const smsg=(id,m,t='ok')=>{const e=document.getElementById(id);if(!e)return;e.textContent=m;e.className='smsg show '+t;setTimeout(()=>e.className='smsg',4500);};
 const setDataStatus=s=>{const e=document.getElementById('fb-indicator');if(!e)return;const mp={ok:['Connected','ok'],err:['Offline','err'],loading:['Connecting','loading']};const[txt,cls]=mp[s]||mp.loading;e.textContent=txt;e.className='fb-status '+cls;};
-const showScreen=s=>{const authScreen=document.getElementById('screen-auth'),dashScreen=document.getElementById('screen-dash'),showAuth=s==='auth';authScreen.className=showAuth?'active':'';dashScreen.className=showAuth?'':'active';authScreen.hidden=!showAuth;dashScreen.hidden=showAuth;authScreen.setAttribute('aria-hidden',String(!showAuth));dashScreen.setAttribute('aria-hidden',String(showAuth));window.scrollTo(0,0);};
+const showScreen=s=>{const authScreen=document.getElementById('screen-auth'),dashScreen=document.getElementById('screen-dash'),showAuth=s==='auth';authScreen.className=showAuth?'active':'';dashScreen.className=showAuth?'':'active';authScreen.hidden=!showAuth;dashScreen.hidden=showAuth;authScreen.style.setProperty('display',showAuth?'flex':'none','important');dashScreen.style.setProperty('display',showAuth?'none':'block','important');authScreen.setAttribute('aria-hidden',String(!showAuth));dashScreen.setAttribute('aria-hidden',String(showAuth));window.scrollTo(0,0);};
 function shopDetailsReady(){return !!(vs&&vs.name&&vs.category&&vs.address);}
 function sellerReady(){return shopDetailsReady();}
 function setupMessage(){if(!shopDetailsReady())return 'Save shop name, category, and full address first. Documents are optional.';return 'Shop setup complete. Products and orders are unlocked.';}
