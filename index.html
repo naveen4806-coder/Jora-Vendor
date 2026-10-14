@@ -8,10 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Manrope:wght@500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -815,10 +813,8 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
  </div>
 </div>
 <div class="toast" id="toast"></div>
-<script>const fbConfig={apiKey:"AIzaSyCxNdOs69QAD-1FTIDVyf0N0N2YGqWNgOo",authDomain:"nexcart-db-7a02f.firebaseapp.com",projectId:"nexcart-db-7a02f",storageBucket:"nexcart-db-7a02f.firebasestorage.app",messagingSenderId:"868851396316",appId:"1:868851396316:web:951e1988f3f2e4b065ce19",measurementId:"G-NPMLZ054G8"};
-firebase.initializeApp(fbConfig);
-const db=firebase.firestore(),storage=firebase.storage(),auth=firebase.auth();
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+<script>/* Supabase-only runtime is loaded by supabase-compat.js. */
+auth.setPersistence('local').catch(()=>{});
 const shopsCol=()=>db.collection('shops'),productsCol=()=>db.collection('products');
 const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)),del:k=>localStorage.removeItem(k)};
 const getVendors=()=>LS.get('lsv_vendors')||{};
@@ -924,7 +920,7 @@ window.handleAuth=async()=>{
  if(!email||!pass){err.textContent='Please fill in all fields.';err.className='amsg err show';return;}
  err.className='amsg';btn.disabled=true;btn.textContent=authMode==='login'?'Logging in...':'Creating account...';
  try{
-  await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+  await auth.setPersistence('local');
   if(authMode==='register'){
    if(!name){throw new Error('Please enter your name.');}
    if(pass.length<6){throw new Error('Password must be at least 6 characters.');}
