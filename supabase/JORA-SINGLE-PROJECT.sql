@@ -77,7 +77,8 @@ alter table public.orders add column if not exists created_at timestamptz not nu
 alter table public.orders add column if not exists updated_at timestamptz not null default now();
 alter table public.orders enable row level security;
 drop policy if exists "participants can read orders" on public.orders;
-create policy "participants can read orders" on public.orders for select using (auth.uid() in (customer_id, vendor_id, delivery_partner_id));
+-- Order permissions are added once the customer, vendor, and delivery apps use the same order fields.
+-- RLS stays enabled and denies access by default until those app-specific policies are deployed.
 
 do $$ begin
   alter publication supabase_realtime add table public.vendor_documents;
