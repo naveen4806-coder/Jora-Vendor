@@ -1,6 +1,6 @@
 /* Supabase-only compatibility layer for the existing vendor dashboard. */
 (function(){
-  const URL='https://hakbltksiwddapdszood.supabase.co', KEY='sb_publishable_S25TW5N7-BCn9PvPSi1khw_2QQTasJm';
+  const URL='https://yilxsvrldltcaozaonlt.supabase.co', KEY='sb_publishable_9CzxOhalkMB3k9VD7d3oDg_ynjDUwg4';
   const client=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true}}); window.joraSupabase=client;
   const stamp=()=>new Date().toISOString(), clone=x=>JSON.parse(JSON.stringify(x||{}));
   const err=e=>{const x=new Error(e&&e.message||'Supabase request failed');x.code=e&&e.code;return x};
