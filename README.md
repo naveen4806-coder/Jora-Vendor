@@ -9,6 +9,6 @@
 
 ## Important migration note
 
-This folder contains the existing, working vendor portal and the Supabase package, client, and database schema. The portal's current live data calls are still Firebase calls. Do not delete Firebase or deploy this as a Supabase replacement until the Firebase data and every data call in `index.html` have been migrated and tested against the new Supabase tables.
+This folder contains the Jora vendor portal, Supabase client, database schema, and Supabase Edge Functions. Authentication and application data use Supabase; no Firebase project, SDK, or Firebase Functions deployment is required.
 
 Do not commit `.env`. Git ignores it; `.env.example` is the safe template to commit.
