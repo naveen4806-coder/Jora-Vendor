@@ -32,17 +32,24 @@ create policy "vendors manage own documents" on public.vendor_documents for all 
 
 create table if not exists public.market_shops (
   vendor_shop_id text primary key,
-  vendor_id uuid not null references auth.users(id) on delete cascade,
+  vendor_id text not null,
   data jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
 create table if not exists public.market_products (
   vendor_product_id text primary key,
-  vendor_id uuid not null references auth.users(id) on delete cascade,
+  vendor_id text not null,
   shop_id text not null,
   data jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+alter table public.market_shops add column if not exists vendor_id text;
+alter table public.market_shops add column if not exists data jsonb not null default '{}'::jsonb;
+alter table public.market_shops add column if not exists updated_at timestamptz not null default now();
+alter table public.market_products add column if not exists vendor_id text;
+alter table public.market_products add column if not exists shop_id text;
+alter table public.market_products add column if not exists data jsonb not null default '{}'::jsonb;
+alter table public.market_products add column if not exists updated_at timestamptz not null default now();
 alter table public.market_shops enable row level security;
 alter table public.market_products enable row level security;
 drop policy if exists "public can read active shops" on public.market_shops;
@@ -60,6 +67,14 @@ create table if not exists public.orders (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- Existing projects can already have an orders table. Add the shared-app fields safely.
+alter table public.orders add column if not exists customer_id uuid references auth.users(id);
+alter table public.orders add column if not exists vendor_id uuid references auth.users(id);
+alter table public.orders add column if not exists delivery_partner_id uuid references auth.users(id);
+alter table public.orders add column if not exists status text not null default 'pending';
+alter table public.orders add column if not exists data jsonb not null default '{}'::jsonb;
+alter table public.orders add column if not exists created_at timestamptz not null default now();
+alter table public.orders add column if not exists updated_at timestamptz not null default now();
 alter table public.orders enable row level security;
 drop policy if exists "participants can read orders" on public.orders;
 create policy "participants can read orders" on public.orders for select using (auth.uid() in (customer_id, vendor_id, delivery_partner_id));
