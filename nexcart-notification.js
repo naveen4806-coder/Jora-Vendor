@@ -26,3 +26,4 @@
   window.NexCartNotifications={notify:notify,playSound:play,requestPermission:requestPermission,getPreferences:function(){return Object.assign({},prefs);},clear:function(){items=[];save();}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
+
