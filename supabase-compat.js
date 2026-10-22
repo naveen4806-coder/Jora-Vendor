@@ -15,7 +15,7 @@
     signOut: async () => { const result = await client.auth.signOut(); if (result.error) throw err(result.error); auth.currentUser = null; },
     onAuthStateChanged: callback => { client.auth.getUser().then(result => { auth.currentUser = user(result.data.user); callback(auth.currentUser); }); return client.auth.onAuthStateChange((_, session) => { auth.currentUser = user(session && session.user); callback(auth.currentUser); }).data.subscription.unsubscribe; }
   };
-  const statusToLegacy = { placed: 'Confirmed', confirmed: 'Confirmed', packed: 'Packed', handed_to_delivery_partner: 'Ready for Pickup', out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled', refunded: 'Refunded' };
+  const statusToLegacy = { placed: 'Placed', confirmed: 'Confirmed', packed: 'Packed', handed_to_delivery_partner: 'Ready for Pickup', out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled', refunded: 'Refunded' };
   function statusToShared(value) {
     const key = String(value || 'placed').toLowerCase().replace(/\s+/g, '_');
     return { ready_for_pickup: 'handed_to_delivery_partner', picked_up: 'handed_to_delivery_partner', handovered: 'handed_to_delivery_partner', handed_over: 'handed_to_delivery_partner', confirmed: 'confirmed', packed: 'packed', out_for_delivery: 'out_for_delivery', delivered: 'delivered', cancelled: 'cancelled', refunded: 'refunded', placed: 'placed' }[key] || 'placed';
@@ -23,7 +23,7 @@
   function legacyOrder(row) {
     if (!row) return row;
     const first = Array.isArray(row.items) && row.items[0] || {};
-    return Object.assign({}, row, {
+    return Object.assign({}, row.data || {}, row, {
       customerUid: row.customer_id, vendorUid: row.vendor_id, shopId: row.shop_id, shopName: row.shop_name,
       shopLat: row.shop_lat, shopLng: row.shop_lng, deliveryAddress: row.delivery_address,
       deliveryLat: row.delivery_lat, deliveryLng: row.delivery_lng, deliveryFee: row.delivery_fee,
@@ -44,7 +44,20 @@
     if (data.status !== undefined) patch.status = statusToShared(data.status);
     return patch;
   }
-  function legacyPresence(row) { return row && Object.assign({}, row, { lat: row.latitude, lng: row.longitude, photo: row.photo_url, activeOrderId: row.active_order_id, isOnline: row.is_online, locationUpdatedAt: row.location_updated_at }); }
+  function legacyPresence(row) {
+    if (!row) return row;
+    const name = String(row.full_name || '').trim().split(/\s+/).filter(Boolean);
+    return Object.assign({}, row, {
+      firstName: row.first_name || name[0] || '',
+      lastName: row.last_name || name.slice(1).join(' '),
+      lat: row.latitude,
+      lng: row.longitude,
+      photo: row.photo_url,
+      activeOrderId: row.active_order_id,
+      isOnline: row.is_online,
+      locationUpdatedAt: row.location_updated_at
+    });
+  }
   class Snap { constructor(id, data) { this.id = id; this._data = data; this.exists = !!data; } data() { return clone(this._data); } }
   function isShared(collection) { return collection === 'orders' || collection === 'delivery_partners'; }
   function sharedTable(collection) { return collection === 'orders' ? 'orders' : 'delivery_partner_presence'; }
@@ -88,5 +101,14 @@
     }
   }
   const db = { collection: collection => new Query(collection), runTransaction: async callback => callback({ get: ref => ref.get(), update: (ref, data) => ref.update(data) }) }, storage = {};
-  window.auth = auth; window.db = db; window.storage = storage;
+  const ordersApi = {
+    async assignDeliveryPartner(orderId, partnerId) {
+      const result = await client.rpc('assign_delivery_partner', {
+        order_id: String(orderId),
+        partner_id: partnerId
+      });
+      if (result.error) throw err(result.error);
+    }
+  };
+  window.auth = auth; window.db = db; window.storage = storage; window.JoraOrdersApi = ordersApi;
 }());
