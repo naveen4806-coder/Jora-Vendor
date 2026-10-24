@@ -60,6 +60,14 @@
       locationUpdatedAt: row.location_updated_at
     });
   }
+  async function vendorProfile(name, email) {
+    const result = await client.rpc('ensure_vendor_profile', {
+      profile_name: String(name || ''),
+      profile_email: String(email || '')
+    });
+    if (result.error) throw err(result.error);
+    return result.data || null;
+  }
   class Snap { constructor(id, data) { this.id = id; this._data = data; this.exists = !!data; } data() { return clone(this._data); } }
   function isShared(collection) { return collection === 'orders' || collection === 'delivery_partners'; }
   function sharedTable(collection) { return collection === 'orders' ? 'orders' : 'delivery_partner_presence'; }
@@ -68,11 +76,15 @@
     constructor(collection, id) { this.c = collection; this.id = id; }
     async get() {
       if (isShared(this.c)) { const result = await client.from(sharedTable(this.c)).select('*').eq('id', this.id).maybeSingle(); if (result.error) throw err(result.error); return new Snap(this.id, mapShared(this.c, result.data)); }
+      // A profile is always the currently authenticated vendor's own profile.
+      // Use the secure bootstrap RPC so an initial profile read cannot fail on RLS.
+      if (this.c === 'vendor_profiles' && auth.currentUser && this.id === auth.currentUser.uid) return new Snap(this.id, await vendorProfile(auth.currentUser.displayName, auth.currentUser.email));
       const result = await client.from('vendor_documents').select('data').eq('collection', this.c).eq('id', this.id).maybeSingle(); if (result.error) throw err(result.error); return new Snap(this.id, result.data && result.data.data);
     }
     async set(data, options) {
       if (this.c === 'orders') { const current = options && options.merge ? (await this.get()).data() || {} : {}; const result = await client.from('orders').upsert(Object.assign({ id: this.id }, sharedOrderPatch(Object.assign({}, current, data))), { onConflict: 'id' }); if (result.error) throw err(result.error); return; }
       if (this.c === 'delivery_partners') { const result = await client.from('delivery_partner_presence').upsert(Object.assign({ id: this.id, updated_at: stamp() }, data), { onConflict: 'id' }); if (result.error) throw err(result.error); return; }
+      if (this.c === 'vendor_profiles' && auth.currentUser && this.id === auth.currentUser.uid) { await vendorProfile(data && data.name || auth.currentUser.displayName, data && data.email || auth.currentUser.email); return; }
       const owner = auth.currentUser && auth.currentUser.uid || data.ownerUid || data.vendorId; if (!owner) throw new Error('Sign in required'); const payload = options && options.merge ? Object.assign({}, (await this.get()).data() || {}, clone(data)) : clone(data); const result = await client.from('vendor_documents').upsert({ collection: this.c, id: this.id, owner_id: owner, data: payload, updated_at: stamp() }); if (result.error) throw err(result.error);
     }
     async update(data) {
@@ -112,5 +124,5 @@
       if (result.error) throw err(result.error);
     }
   };
-  window.auth = auth; window.db = db; window.storage = storage; window.JoraOrdersApi = ordersApi;
+  window.auth = auth; window.db = db; window.storage = storage; window.JoraOrdersApi = ordersApi; window.JoraVendorApi = { ensureVendorProfile: vendorProfile };
 }());
