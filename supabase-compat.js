@@ -3,6 +3,8 @@
    delivery-partner availability use the shared, real-time tables. */
 (function () {
   const URL = 'https://yilxsvrldltcaozaonlt.supabase.co', KEY = 'sb_publishable_9CzxOhalkMB3k9VD7d3oDg_ynjDUwg4';
+  const pricingNumber = value => Number.isFinite(Number(value)) ? Number(value) : 0, pricingMoney = value => Math.round((pricingNumber(value) + Number.EPSILON) * 100) / 100;
+  window.JoraPricing = window.JoraPricing || { DELIVERY_RATE_PER_KM: 10, calculateTax(items, settings) { settings = settings || {}; if (!settings.enabled) return 0; return pricingMoney((items || []).reduce((sum, item) => { const qty = Math.max(0, pricingNumber(item && item.qty)), base = pricingMoney(pricingNumber(item && item.price) * qty), rule = (settings.perCategory || {})[item && item.category] || settings; return sum + (rule && rule.mode === 'flat' ? pricingNumber(rule.value) * qty : base * pricingNumber(rule && rule.value) / 100); }, 0)); }, getOrderTotals(input) { input = input || {}; const amount = pricingMoney((input.items || []).reduce((sum, item) => sum + pricingNumber(item && item.price) * Math.max(0, pricingNumber(item && item.qty)), 0)), distanceKm = Math.round(Math.max(0, pricingNumber(input.distanceKm)) * 10) / 10, deliveryCharge = Math.round(distanceKm * 10), productTax = this.calculateTax(input.items, input.taxSettings); return { productAmount: amount, distanceKm, deliveryCharge, productTax, total: pricingMoney(amount + deliveryCharge + productTax) }; } };
   const client = window.supabase.createClient(URL, KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   window.joraSupabase = client;
   const stamp = () => new Date().toISOString(), clone = value => JSON.parse(JSON.stringify(value || {}));
@@ -26,7 +28,7 @@
     return Object.assign({}, row.data || {}, row, {
       customerUid: row.customer_id, vendorUid: row.vendor_id, shopId: row.shop_id, shopName: row.shop_name,
       shopLat: row.shop_lat, shopLng: row.shop_lng, deliveryAddress: row.delivery_address,
-      deliveryLat: row.delivery_lat, deliveryLng: row.delivery_lng, deliveryFee: row.delivery_fee,
+      deliveryLat: row.delivery_lat, deliveryLng: row.delivery_lng, deliveryFee: row.delivery_charge == null ? row.delivery_fee : row.delivery_charge, deliveryCharge: row.delivery_charge == null ? row.delivery_fee : row.delivery_charge, productAmount: row.product_amount == null ? row.subtotal : row.product_amount, productTax: row.product_tax || 0, distanceKm: row.distance_km,
       paymentMethod: row.payment_method, paymentStatus: row.payment_status, deliveryPartnerId: row.rider_id,
       deliveryPartnerUid: row.rider_id, riderLat: row.rider_lat, riderLng: row.rider_lng,
       riderLocationAccuracy: row.rider_location_accuracy, riderLocationUpdatedAt: row.rider_location_updated_at,
